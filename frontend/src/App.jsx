@@ -68,13 +68,13 @@ export default function App() {
     if (id == null) { setActiveTeam(null); setCoverage(null); return; }
     const opts = { headers: { "X-API-Key": API_KEY }, cache: "no-store" };
     fetch(`/api/teams/${id}`, opts)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(`Failed to load team: ${r.status}`); return r.json(); })
       .then((teamData) => setActiveTeam(teamData))
-      .catch((err) => console.error(err));
+      .catch((err) => { console.error(err); setActiveTeam(null); });
     fetch(`/api/teams/${id}/coverage`, opts)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(`Failed to load coverage: ${r.status}`); return r.json(); })
       .then((coverageData) => setCoverage(coverageData))
-      .catch((err) => console.error(err));
+      .catch((err) => { console.error(err); setCoverage(null); });
   }, []);
 
   useEffect(() => {
@@ -446,10 +446,11 @@ export default function App() {
               <button
                 onClick={async () => {
                   if (!window.confirm("Delete this team and all its members?")) return;
-                  await fetch(`/api/teams/${activeTeamId}`, {
+                  const r = await fetch(`/api/teams/${activeTeamId}`, {
                     method: "DELETE",
                     headers: { "X-API-Key": API_KEY },
                   });
+                  if (!r.ok) { setError(`Failed to delete team: ${r.status}`); setTimeout(() => setError(null), 4000); return; }
                   setActiveTeamId(null);
                   loadTeams();
                 }}
@@ -497,10 +498,11 @@ export default function App() {
                         title="Remove from team"
                         style={{ opacity: 1 }}
                         onClick={async () => {
-                          await fetch(`/api/teams/${activeTeamId}/members/${m.pokemon_id}`, {
+                          const r = await fetch(`/api/teams/${activeTeamId}/members/${m.pokemon_id}`, {
                             method: "DELETE",
                             headers: { "X-API-Key": API_KEY },
                           });
+                          if (!r.ok) { setError(`Failed to remove member: ${r.status}`); setTimeout(() => setError(null), 4000); return; }
                           loadActiveTeam(activeTeamId);
                           loadTeams();
                         }}
