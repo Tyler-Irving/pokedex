@@ -69,7 +69,8 @@ export default function App() {
     if (search) params.set("search", search);
     if (typeFilter) params.set("type", typeFilter);
 
-    fetch(`/api/pokemon?${params}`, { headers: { "X-API-Key": API_KEY } })
+    const controller = new AbortController();
+    fetch(`/api/pokemon?${params}`, { headers: { "X-API-Key": API_KEY }, signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`Failed to load Pokémon: ${response.status}`);
         return response.json();
@@ -79,10 +80,12 @@ export default function App() {
         setTotal(data.total);
       })
       .catch((err) => {
+        if (err.name === "AbortError") return;
         console.error(err);
         setError(err.message);
       })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [offset, search, typeFilter, view]);
 
   // Reset offset when filters change
@@ -102,21 +105,28 @@ export default function App() {
     setShowShiny(false);
     setEncounters(null);
 
-    fetch(`/api/pokemon/${selected}`, { headers: { "X-API-Key": API_KEY } })
+    const controller = new AbortController();
+
+    fetch(`/api/pokemon/${selected}`, { headers: { "X-API-Key": API_KEY }, signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`Failed to load Pokémon detail: ${response.status}`);
         return response.json();
       })
       .then(setDetail)
       .catch((err) => {
+        if (err.name === "AbortError") return;
         console.error(err);
         setSelected(null);
       });
 
-    fetch(`/api/pokemon/${selected}/encounters`, { headers: { "X-API-Key": API_KEY } })
+    fetch(`/api/pokemon/${selected}/encounters`, { headers: { "X-API-Key": API_KEY }, signal: controller.signal })
       .then((response) => (response.ok ? response.json() : []))
       .then(setEncounters)
-      .catch(() => setEncounters([]));
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        setEncounters([]);
+      });
+    return () => controller.abort();
   }, [selected]);
 
   const toggleFav = async (id, event) => {
@@ -354,7 +364,7 @@ export default function App() {
                   </p>
                   <p>
                     <strong>Abilities:</strong>{" "}
-                    {detail.abilities.map((ability) => ability.replace("-", " ")).join(", ")}
+                    {detail.abilities.map((ability) => ability.replace(/-/g, " ")).join(", ")}
                   </p>
                 </div>
 

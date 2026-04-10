@@ -92,18 +92,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         }
 
     def _too_many_requests_response(self, reset_at: float) -> Response:
+        retry_after = max(0, int(reset_at - time.time()))
         body = json.dumps(
             {
                 "detail": "Too Many Requests",
                 "message": (
                     f"Rate limit of {self.requests_per_window} requests per "
                     f"{self.window_seconds} seconds exceeded. "
-                    f"Retry after {int(reset_at - time.time())} seconds."
+                    f"Retry after {retry_after} seconds."
                 ),
             }
         )
         headers = self._build_rate_limit_headers(remaining=0, reset_at=reset_at)
-        headers["Retry-After"] = str(int(reset_at - time.time()))
+        headers["Retry-After"] = str(retry_after)
         headers["Content-Type"] = "application/json"
         return Response(content=body, status_code=429, headers=headers)
 

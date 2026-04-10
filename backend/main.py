@@ -47,11 +47,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Pokédex", lifespan=lifespan)
 
 # Middleware is applied in reverse registration order (last registered = outermost).
-# Rate limiting runs first (outermost), then logging records the final status,
-# then cache headers are attached to the response on the way out.
+# Logging is outermost so it records every request including 429s from rate limiting.
+# Rate limiting short-circuits before cache headers run on the inner response.
 app.add_middleware(CacheHeaderMiddleware)
-app.add_middleware(LoggingMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_window=100, window_seconds=60)
+app.add_middleware(LoggingMiddleware)
 
 # Mount all routers
 for module in [
@@ -159,12 +159,15 @@ async def api_index():
 @app.get("/api/health")
 async def health():
     db_status = "ok"
+    db = None
     try:
         db = await get_db()
         await db.execute("SELECT 1")
-        await db.close()
     except Exception:
         db_status = "error"
+    finally:
+        if db is not None:
+            await db.close()
     return {
         "status": "ok",
         "uptime_seconds": time.time() - _start_time,

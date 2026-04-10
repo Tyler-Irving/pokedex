@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -10,6 +11,8 @@ from ..schemas import (
     PokemonListResponse,
     TypesListResponse,
 )
+
+_POKEMON_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$|^\d+$")
 
 router = APIRouter(prefix="/api", tags=["Pokemon"])
 
@@ -94,6 +97,9 @@ async def compare_pokemon(ids: str = Query(..., description="Comma-separated lis
     id_list = [raw_id.strip() for raw_id in ids.split(",") if raw_id.strip()]
     if len(id_list) < 2 or len(id_list) > 6:
         raise HTTPException(status_code=400, detail="Provide between 2 and 6 pokemon IDs.")
+    invalid_format = [pid for pid in id_list if not _POKEMON_ID_RE.match(pid)]
+    if invalid_format:
+        raise HTTPException(status_code=400, detail=f"Invalid pokemon ID format: {', '.join(invalid_format)}")
 
     results = await asyncio.gather(
         *[pokeapi_get(f"pokemon/{pid}") for pid in id_list],

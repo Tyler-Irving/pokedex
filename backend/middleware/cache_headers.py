@@ -30,7 +30,10 @@ class CacheHeaderMiddleware(BaseHTTPMiddleware):
         etag = f'"{hashlib.sha256(body).hexdigest()[:32]}"'
 
         if request.headers.get("if-none-match") == etag:
-            return Response(status_code=304, headers={"ETag": etag})
+            return Response(
+                status_code=304,
+                headers={"ETag": etag, "Cache-Control": f"public, max-age={CACHE_TTL}"},
+            )
 
         headers = dict(response.headers)
         headers["Cache-Control"] = f"public, max-age={CACHE_TTL}"
