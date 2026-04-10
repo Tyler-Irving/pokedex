@@ -20,7 +20,7 @@ async def list_favorites(_: None = Depends(require_api_key)):
         rows = await cursor.fetchall()
     finally:
         await db.close()
-    return {"favorites": [dict(r) for r in rows]}
+    return {"favorites": [dict(row) for row in rows]}
 
 
 @router.post("/favorites/{pokemon_id}", response_model=OkResponse)

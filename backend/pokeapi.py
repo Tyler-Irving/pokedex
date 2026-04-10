@@ -23,8 +23,8 @@ class _LRUCache:
     def get(self, key: str) -> dict | None:
         if key not in self._store:
             return None
-        data, ts = self._store[key]
-        if time.time() - ts >= self._ttl:
+        data, cached_at = self._store[key]
+        if time.time() - cached_at >= self._ttl:
             del self._store[key]
             return None
         self._store.move_to_end(key)
@@ -66,8 +66,8 @@ _type_index: dict[str, list[str]] = {}  # type_name -> [pokemon_name, ...]
 
 async def build_type_index():
     data = await pokeapi_get("type?limit=50")
-    for t in data["results"]:
-        type_data = await pokeapi_get(f"type/{t['name']}")
-        _type_index[t["name"]] = [
-            p["pokemon"]["name"] for p in type_data["pokemon"]
+    for type_entry in data["results"]:
+        type_data = await pokeapi_get(f"type/{type_entry['name']}")
+        _type_index[type_entry["name"]] = [
+            pokemon_entry["pokemon"]["name"] for pokemon_entry in type_data["pokemon"]
         ]

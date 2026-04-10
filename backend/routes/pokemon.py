@@ -26,28 +26,28 @@ async def list_pokemon(
     """List pokemon with pagination, optional search and type filter."""
     data = await pokeapi_get("pokemon?limit=1302&offset=0")
     results = [
-        r for r in data["results"]
-        if int(r["url"].rstrip("/").split("/")[-1]) < 10000
+        entry for entry in data["results"]
+        if int(entry["url"].rstrip("/").split("/")[-1]) < 10000
     ]
 
     if search:
-        q = search.lower()
-        results = [r for r in results if q in r["name"]]
+        query = search.lower()
+        results = [entry for entry in results if query in entry["name"]]
 
     if type and type in _type_index:
         type_names = set(_type_index[type])
-        results = [r for r in results if r["name"] in type_names]
+        results = [entry for entry in results if entry["name"] in type_names]
 
     total = len(results)
     page = results[offset : offset + limit]
 
     enriched = []
-    for p in page:
-        pid = int(p["url"].rstrip("/").split("/")[-1])
+    for entry in page:
+        pid = int(entry["url"].rstrip("/").split("/")[-1])
         enriched.append(
             {
                 "id": pid,
-                "name": p["name"],
+                "name": entry["name"],
                 "sprite": f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{pid}.png",
             }
         )
@@ -73,11 +73,11 @@ async def get_pokemon(pokemon_id: int):
         "name": data["name"],
         "sprite": data["sprites"].get("front_default"),
         "sprite_shiny": data["sprites"].get("front_shiny"),
-        "types": [t["type"]["name"] for t in data["types"]],
-        "stats": {s["stat"]["name"]: s["base_stat"] for s in data["stats"]},
+        "types": [type_slot["type"]["name"] for type_slot in data["types"]],
+        "stats": {stat_entry["stat"]["name"]: stat_entry["base_stat"] for stat_entry in data["stats"]},
         "height": data["height"],
         "weight": data["weight"],
-        "abilities": [a["ability"]["name"] for a in data["abilities"]],
+        "abilities": [ability_slot["ability"]["name"] for ability_slot in data["abilities"]],
         "flavor_text": flavor,
     }
 
@@ -91,7 +91,7 @@ async def get_pokemon_encounters(id_or_name: str):
 @router.get("/compare", response_model=CompareResponse)
 async def compare_pokemon(ids: str = Query(..., description="Comma-separated list of 2–6 pokemon IDs")):
     """Compare stats for 2 to 6 pokemon."""
-    id_list = [s.strip() for s in ids.split(",") if s.strip()]
+    id_list = [raw_id.strip() for raw_id in ids.split(",") if raw_id.strip()]
     if len(id_list) < 2 or len(id_list) > 6:
         raise HTTPException(status_code=400, detail="Provide between 2 and 6 pokemon IDs.")
 
@@ -100,7 +100,7 @@ async def compare_pokemon(ids: str = Query(..., description="Comma-separated lis
         return_exceptions=True,
     )
 
-    invalid_ids = [id_list[i] for i, r in enumerate(results) if isinstance(r, Exception)]
+    invalid_ids = [id_list[index] for index, result in enumerate(results) if isinstance(result, Exception)]
     if invalid_ids:
         raise HTTPException(
             status_code=404,
@@ -111,15 +111,15 @@ async def compare_pokemon(ids: str = Query(..., description="Comma-separated lis
         {
             "id": data["id"],
             "name": data["name"],
-            "types": [t["type"]["name"] for t in data["types"]],
-            "stats": {s["stat"]["name"]: s["base_stat"] for s in data["stats"]},
+            "types": [type_slot["type"]["name"] for type_slot in data["types"]],
+            "stats": {stat_entry["stat"]["name"]: stat_entry["base_stat"] for stat_entry in data["stats"]},
         }
         for data in results
     ]
 
     stat_names = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"]
     best_in_stat = {
-        stat: max(pokemon, key=lambda p: p["stats"].get(stat, 0))["name"]
+        stat: max(pokemon, key=lambda poke: poke["stats"].get(stat, 0))["name"]
         for stat in stat_names
     }
 
