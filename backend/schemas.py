@@ -78,3 +78,41 @@ class FavoritesListResponse(BaseModel):
 
 class OkResponse(BaseModel):
     ok: bool
+
+
+# --- Teams ---
+
+class TeamMemberItem(BaseModel):
+    pokemon_id: int
+    name: str
+    sprite: str | None = None
+
+
+class TeamSummary(BaseModel):
+    id: int
+    name: str
+    member_count: int
+
+
+class TeamDetail(BaseModel):
+    id: int
+    name: str
+    members: list[TeamMemberItem]
+
+
+class TeamsListResponse(BaseModel):
+    teams: list[TeamSummary]
+
+
+class TeamCreateRequest(BaseModel):
+    name: str
+
+
+class TeamRenameRequest(BaseModel):
+    name: str
+
+
+class CoverageResponse(BaseModel):
+    strong: list[str]
+    weak: list[str]
+    no_coverage: list[str]

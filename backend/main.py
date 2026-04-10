@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .database import get_db, init_db
 from .middleware import CacheHeaderMiddleware, LoggingMiddleware, RateLimitMiddleware, configure_logging
-from .pokeapi import _cache, build_type_index
+from .pokeapi import _cache, build_type_chart, build_type_index
 from .routes import (
     berries,
     contests,
@@ -22,6 +22,7 @@ from .routes import (
     machines,
     moves,
     pokemon,
+    teams,
     utility,
 )
 
@@ -41,6 +42,10 @@ async def lifespan(app: FastAPI):
         await build_type_index()
     except Exception:
         _logger.warning("build_type_index() failed at startup; type filtering will be unavailable", exc_info=True)
+    try:
+        await build_type_chart()
+    except Exception:
+        _logger.warning("build_type_chart() failed at startup; coverage calculations will be unavailable", exc_info=True)
     yield
 
 
@@ -66,6 +71,7 @@ for module in [
     machines,
     moves,
     pokemon,
+    teams,
     utility,
 ]:
     app.include_router(module.router)

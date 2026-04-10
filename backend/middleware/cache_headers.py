@@ -22,6 +22,10 @@ class CacheHeaderMiddleware(BaseHTTPMiddleware):
         if request.method != "GET" or response.status_code != 200:
             return response
 
+        # Mutable resources must not be browser-cached
+        if request.url.path.startswith("/api/teams") or request.url.path.startswith("/api/favorites"):
+            return response
+
         # Buffer the body so we can hash it and support 304.
         body = b""
         async for chunk in response.body_iterator:

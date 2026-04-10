@@ -78,3 +78,17 @@ async def build_type_index():
         _type_index[type_entry["name"]] = [
             pokemon_entry["pokemon"]["name"] for pokemon_entry in type_data["pokemon"]
         ]
+
+
+_type_chart: dict[str, dict] = {}
+
+
+async def build_type_chart():
+    """Cache type effectiveness data for coverage calculations."""
+    data = await pokeapi_get("type?limit=50")
+    for type_entry in data["results"]:
+        name = type_entry["name"]
+        if name in ("unknown", "shadow"):
+            continue
+        type_data = await pokeapi_get(f"type/{name}")
+        _type_chart[name] = type_data["damage_relations"]
