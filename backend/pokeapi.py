@@ -50,14 +50,21 @@ async def pokeapi_get(path: str) -> dict:
     cached = _cache.get(url)
     if cached is not None:
         return cached
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(url)
-        if resp.status_code == 404:
-            raise HTTPException(status_code=404, detail="Not found on PokeAPI")
-        resp.raise_for_status()
-        data = resp.json()
-        _cache.set(url, data)
-        return data
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url)
+            if resp.status_code == 404:
+                raise HTTPException(status_code=404, detail="Not found on PokeAPI")
+            resp.raise_for_status()
+            data = resp.json()
+            _cache.set(url, data)
+            return data
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="PokeAPI request timed out")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=503, detail=f"PokeAPI unreachable: {exc}")
 
 
 # Pre-fetch type index for filtering

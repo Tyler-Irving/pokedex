@@ -88,6 +88,8 @@ async def get_pokemon(pokemon_id: int):
 @router.get("/pokemon/{id_or_name}/encounters")
 async def get_pokemon_encounters(id_or_name: str):
     """Get location areas where a pokemon can be found."""
+    if not _POKEMON_ID_RE.match(id_or_name):
+        raise HTTPException(status_code=400, detail="Invalid pokemon ID or name")
     return await pokeapi_get(f"pokemon/{id_or_name}/encounters")
 
 
@@ -117,6 +119,7 @@ async def compare_pokemon(ids: str = Query(..., description="Comma-separated lis
         {
             "id": data["id"],
             "name": data["name"],
+            "sprite": data["sprites"].get("front_default"),
             "types": [type_slot["type"]["name"] for type_slot in data["types"]],
             "stats": {stat_entry["stat"]["name"]: stat_entry["base_stat"] for stat_entry in data["stats"]},
         }

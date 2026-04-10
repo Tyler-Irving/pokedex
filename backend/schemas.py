@@ -54,6 +54,7 @@ class TypesListResponse(BaseModel):
 class PokemonCompareItem(BaseModel):
     id: int
     name: str
+    sprite: str | None
     types: list[str]
     stats: dict[str, int]
 
