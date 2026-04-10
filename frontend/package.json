@@ -1,5 +1,5 @@
 {
-  "name": "pokedex-frontend",
+  "name": "pokedex",
   "private": true,
   "type": "module",
   "scripts": {
