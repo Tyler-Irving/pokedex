@@ -125,6 +125,12 @@ async def get_team(team_id: int, _: None = Depends(require_api_key)):
 
 @router.post("/teams/{team_id}/members/{pokemon_id}", response_model=OkResponse, status_code=201)
 async def add_member(team_id: int, pokemon_id: int, _: None = Depends(require_api_key)):
+    # Fetch from PokeAPI before touching the DB so the count check and insert
+    # happen in the same connection, eliminating the TOCTOU race window.
+    data = await pokeapi_get(f"pokemon/{pokemon_id}")
+    name = data["name"]
+    sprite = data["sprites"]["front_default"]
+
     db = await get_db()
     try:
         cursor = await db.execute("SELECT id FROM teams WHERE id = ?", (team_id,))
@@ -136,15 +142,6 @@ async def add_member(team_id: int, pokemon_id: int, _: None = Depends(require_ap
         (count,) = await cursor.fetchone()
         if count >= MAX_MEMBERS:
             raise HTTPException(status_code=409, detail=f"Team is full ({MAX_MEMBERS} members max)")
-    finally:
-        await db.close()
-
-    data = await pokeapi_get(f"pokemon/{pokemon_id}")
-    name = data["name"]
-    sprite = data["sprites"]["front_default"]
-
-    db = await get_db()
-    try:
         await db.execute(
             "INSERT INTO team_members (team_id, pokemon_id, name, sprite) VALUES (?, ?, ?, ?)",
             (team_id, pokemon_id, name, sprite),
@@ -191,6 +188,9 @@ async def get_coverage(team_id: int, _: None = Depends(require_api_key)):
     if not member_rows:
         return {"strong": [], "weak": [], "no_coverage": ALL_TYPES}
 
+    if not _type_chart:
+        raise HTTPException(status_code=503, detail="Type chart not yet loaded; try again shortly")
+
     # Fetch types for each member from PokeAPI
     member_types: list[list[str]] = []
     for row in member_rows:
@@ -201,8 +201,20 @@ async def get_coverage(team_id: int, _: None = Depends(require_api_key)):
     # All unique attack types the team has
     all_team_types: set[str] = {t for types in member_types for t in types}
 
-    def type_names(relations_key: str, atk_type: str) -> list[str]:
-        return [r["name"] for r in _type_chart.get(atk_type, {}).get(relations_key, [])]
+    def type_names(relations_key: str, type_name: str) -> set[str]:
+        return {r["name"] for r in _type_chart.get(type_name, {}).get(relations_key, [])}
+
+    def is_pokemon_weak_to(def_type: str, poke_types: list[str]) -> bool:
+        """True if def_type deals a net super-effective hit to this pokemon.
+
+        A pokemon is weak to def_type when:
+        - At least one of its types takes double damage from def_type, AND
+        - None of its types is immune to def_type (no_damage_from).
+        """
+        immune = any(def_type in type_names("no_damage_from", pt) for pt in poke_types)
+        if immune:
+            return False
+        return any(def_type in type_names("double_damage_from", pt) for pt in poke_types)
 
     strong = []
     weak = []
@@ -216,10 +228,9 @@ async def get_coverage(team_id: int, _: None = Depends(require_api_key)):
             strong.append(def_type)
             continue
 
-        # all_members_vulnerable: every pokemon on the team has at least one type
-        # that takes super-effective damage from def_type
+        # all_members_vulnerable: every pokemon on the team is weak to def_type
         all_members_vulnerable = all(
-            any(def_type in type_names("double_damage_from", poke_type) for poke_type in poke_types)
+            is_pokemon_weak_to(def_type, poke_types)
             for poke_types in member_types
         )
 

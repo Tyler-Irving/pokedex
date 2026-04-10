@@ -1,6 +1,6 @@
 """Pydantic response models for the Pokédex API."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # --- PokeAPI common patterns ---
@@ -105,11 +105,11 @@ class TeamsListResponse(BaseModel):
 
 
 class TeamCreateRequest(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1)
 
 
 class TeamRenameRequest(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1)
 
 
 class CoverageResponse(BaseModel):
