@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Games"])
 
 
 # --- Generation ---
 
-@router.get("/generation")
+@router.get("/generation", response_model=NamedAPIResourceList)
 async def list_generations(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_generation(id_or_name: str):
 
 # --- Pokedex ---
 
-@router.get("/pokedex")
+@router.get("/pokedex", response_model=NamedAPIResourceList)
 async def list_pokedexes(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -35,7 +36,7 @@ async def get_pokedex(id_or_name: str):
 
 # --- Version ---
 
-@router.get("/version")
+@router.get("/version", response_model=NamedAPIResourceList)
 async def list_versions(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -49,7 +50,7 @@ async def get_version(id_or_name: str):
 
 # --- Version Group ---
 
-@router.get("/version-group")
+@router.get("/version-group", response_model=NamedAPIResourceList)
 async def list_version_groups(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

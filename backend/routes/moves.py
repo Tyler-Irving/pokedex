@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Moves"])
 
 
 # --- Move ---
 
-@router.get("/move")
+@router.get("/move", response_model=NamedAPIResourceList)
 async def list_moves(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_move(id_or_name: str):
 
 # --- Move Ailment ---
 
-@router.get("/move-ailment")
+@router.get("/move-ailment", response_model=NamedAPIResourceList)
 async def list_move_ailments(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -35,7 +36,7 @@ async def get_move_ailment(id_or_name: str):
 
 # --- Move Battle Style ---
 
-@router.get("/move-battle-style")
+@router.get("/move-battle-style", response_model=NamedAPIResourceList)
 async def list_move_battle_styles(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -49,7 +50,7 @@ async def get_move_battle_style(id_or_name: str):
 
 # --- Move Category ---
 
-@router.get("/move-category")
+@router.get("/move-category", response_model=NamedAPIResourceList)
 async def list_move_categories(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -63,7 +64,7 @@ async def get_move_category(id_or_name: str):
 
 # --- Move Damage Class ---
 
-@router.get("/move-damage-class")
+@router.get("/move-damage-class", response_model=NamedAPIResourceList)
 async def list_move_damage_classes(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -77,7 +78,7 @@ async def get_move_damage_class(id_or_name: str):
 
 # --- Move Learn Method ---
 
-@router.get("/move-learn-method")
+@router.get("/move-learn-method", response_model=NamedAPIResourceList)
 async def list_move_learn_methods(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -91,7 +92,7 @@ async def get_move_learn_method(id_or_name: str):
 
 # --- Move Target ---
 
-@router.get("/move-target")
+@router.get("/move-target", response_model=NamedAPIResourceList)
 async def list_move_targets(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

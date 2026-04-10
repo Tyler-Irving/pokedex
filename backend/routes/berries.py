@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Berries"])
 
 
 # --- Berry ---
 
-@router.get("/berry")
+@router.get("/berry", response_model=NamedAPIResourceList)
 async def list_berries(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_berry(id_or_name: str):
 
 # --- Berry Firmness ---
 
-@router.get("/berry-firmness")
+@router.get("/berry-firmness", response_model=NamedAPIResourceList)
 async def list_berry_firmness(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -35,7 +36,7 @@ async def get_berry_firmness(id_or_name: str):
 
 # --- Berry Flavor ---
 
-@router.get("/berry-flavor")
+@router.get("/berry-flavor", response_model=NamedAPIResourceList)
 async def list_berry_flavors(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

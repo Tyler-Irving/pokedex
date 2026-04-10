@@ -1,13 +1,19 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get, _type_index
+from ..schemas import (
+    NamedAPIResourceList,
+    PokemonDetail,
+    PokemonListResponse,
+    TypesListResponse,
+)
 
 router = APIRouter(prefix="/api", tags=["Pokemon"])
 
 
 # --- Pokemon (enhanced with search/filter) ---
 
-@router.get("/pokemon")
+@router.get("/pokemon", response_model=PokemonListResponse)
 async def list_pokemon(
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -43,7 +49,7 @@ async def list_pokemon(
     return {"total": total, "results": enriched}
 
 
-@router.get("/pokemon/{pokemon_id}")
+@router.get("/pokemon/{pokemon_id}", response_model=PokemonDetail)
 async def get_pokemon(pokemon_id: int):
     """Get detailed info for a single pokemon."""
     data = await pokeapi_get(f"pokemon/{pokemon_id}")
@@ -77,13 +83,13 @@ async def get_pokemon_encounters(id_or_name: str):
 
 # --- Types (enhanced with pre-built index) ---
 
-@router.get("/types")
+@router.get("/types", response_model=TypesListResponse)
 async def list_types():
     """List all pokemon types."""
     return {"types": sorted(_type_index.keys())}
 
 
-@router.get("/type")
+@router.get("/type", response_model=NamedAPIResourceList)
 async def list_types_full(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -97,7 +103,7 @@ async def get_type(id_or_name: str):
 
 # --- Ability ---
 
-@router.get("/ability")
+@router.get("/ability", response_model=NamedAPIResourceList)
 async def list_abilities(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -111,7 +117,7 @@ async def get_ability(id_or_name: str):
 
 # --- Characteristic (id only) ---
 
-@router.get("/characteristic")
+@router.get("/characteristic", response_model=NamedAPIResourceList)
 async def list_characteristics(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -125,7 +131,7 @@ async def get_characteristic(id: int):
 
 # --- Egg Group ---
 
-@router.get("/egg-group")
+@router.get("/egg-group", response_model=NamedAPIResourceList)
 async def list_egg_groups(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -139,7 +145,7 @@ async def get_egg_group(id_or_name: str):
 
 # --- Gender ---
 
-@router.get("/gender")
+@router.get("/gender", response_model=NamedAPIResourceList)
 async def list_genders(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -153,7 +159,7 @@ async def get_gender(id_or_name: str):
 
 # --- Growth Rate ---
 
-@router.get("/growth-rate")
+@router.get("/growth-rate", response_model=NamedAPIResourceList)
 async def list_growth_rates(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -167,7 +173,7 @@ async def get_growth_rate(id_or_name: str):
 
 # --- Nature ---
 
-@router.get("/nature")
+@router.get("/nature", response_model=NamedAPIResourceList)
 async def list_natures(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -181,7 +187,7 @@ async def get_nature(id_or_name: str):
 
 # --- Pokeathlon Stat ---
 
-@router.get("/pokeathlon-stat")
+@router.get("/pokeathlon-stat", response_model=NamedAPIResourceList)
 async def list_pokeathlon_stats(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -195,7 +201,7 @@ async def get_pokeathlon_stat(id_or_name: str):
 
 # --- Pokemon Color ---
 
-@router.get("/pokemon-color")
+@router.get("/pokemon-color", response_model=NamedAPIResourceList)
 async def list_pokemon_colors(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -209,7 +215,7 @@ async def get_pokemon_color(id_or_name: str):
 
 # --- Pokemon Form ---
 
-@router.get("/pokemon-form")
+@router.get("/pokemon-form", response_model=NamedAPIResourceList)
 async def list_pokemon_forms(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -223,7 +229,7 @@ async def get_pokemon_form(id_or_name: str):
 
 # --- Pokemon Habitat ---
 
-@router.get("/pokemon-habitat")
+@router.get("/pokemon-habitat", response_model=NamedAPIResourceList)
 async def list_pokemon_habitats(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -237,7 +243,7 @@ async def get_pokemon_habitat(id_or_name: str):
 
 # --- Pokemon Shape ---
 
-@router.get("/pokemon-shape")
+@router.get("/pokemon-shape", response_model=NamedAPIResourceList)
 async def list_pokemon_shapes(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -251,7 +257,7 @@ async def get_pokemon_shape(id_or_name: str):
 
 # --- Pokemon Species ---
 
-@router.get("/pokemon-species")
+@router.get("/pokemon-species", response_model=NamedAPIResourceList)
 async def list_pokemon_species(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -265,7 +271,7 @@ async def get_pokemon_species(id_or_name: str):
 
 # --- Stat ---
 
-@router.get("/stat")
+@router.get("/stat", response_model=NamedAPIResourceList)
 async def list_stats(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

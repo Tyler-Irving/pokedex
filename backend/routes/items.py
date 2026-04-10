@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Items"])
 
 
 # --- Item ---
 
-@router.get("/item")
+@router.get("/item", response_model=NamedAPIResourceList)
 async def list_items(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_item(id_or_name: str):
 
 # --- Item Attribute ---
 
-@router.get("/item-attribute")
+@router.get("/item-attribute", response_model=NamedAPIResourceList)
 async def list_item_attributes(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -35,7 +36,7 @@ async def get_item_attribute(id_or_name: str):
 
 # --- Item Category ---
 
-@router.get("/item-category")
+@router.get("/item-category", response_model=NamedAPIResourceList)
 async def list_item_categories(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -49,7 +50,7 @@ async def get_item_category(id_or_name: str):
 
 # --- Item Fling Effect ---
 
-@router.get("/item-fling-effect")
+@router.get("/item-fling-effect", response_model=NamedAPIResourceList)
 async def list_item_fling_effects(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -63,7 +64,7 @@ async def get_item_fling_effect(id: int):
 
 # --- Item Pocket ---
 
-@router.get("/item-pocket")
+@router.get("/item-pocket", response_model=NamedAPIResourceList)
 async def list_item_pockets(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

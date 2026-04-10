@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Evolution"])
 
 
 # --- Evolution Chain (id only) ---
 
-@router.get("/evolution-chain")
+@router.get("/evolution-chain", response_model=NamedAPIResourceList)
 async def list_evolution_chains(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_evolution_chain(id: int):
 
 # --- Evolution Trigger ---
 
-@router.get("/evolution-trigger")
+@router.get("/evolution-trigger", response_model=NamedAPIResourceList)
 async def list_evolution_triggers(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

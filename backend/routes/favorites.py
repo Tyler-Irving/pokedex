@@ -2,11 +2,12 @@ from fastapi import APIRouter, HTTPException
 
 from ..database import get_db
 from ..pokeapi import pokeapi_get
+from ..schemas import FavoritesListResponse, OkResponse
 
 router = APIRouter(prefix="/api", tags=["Favorites"])
 
 
-@router.get("/favorites")
+@router.get("/favorites", response_model=FavoritesListResponse)
 def list_favorites():
     db = get_db()
     rows = db.execute(
@@ -16,7 +17,7 @@ def list_favorites():
     return {"favorites": [dict(r) for r in rows]}
 
 
-@router.post("/favorites/{pokemon_id}")
+@router.post("/favorites/{pokemon_id}", response_model=OkResponse)
 async def add_favorite(pokemon_id: int):
     data = await pokeapi_get(f"pokemon/{pokemon_id}")
     db = get_db()
@@ -33,7 +34,7 @@ async def add_favorite(pokemon_id: int):
     return {"ok": True}
 
 
-@router.delete("/favorites/{pokemon_id}")
+@router.delete("/favorites/{pokemon_id}", response_model=OkResponse)
 def remove_favorite(pokemon_id: int):
     db = get_db()
     cur = db.execute("DELETE FROM favorites WHERE pokemon_id = ?", (pokemon_id,))

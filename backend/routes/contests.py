@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Contests"])
 
 
 # --- Contest Type ---
 
-@router.get("/contest-type")
+@router.get("/contest-type", response_model=NamedAPIResourceList)
 async def list_contest_types(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_contest_type(id_or_name: str):
 
 # --- Contest Effect (id only) ---
 
-@router.get("/contest-effect")
+@router.get("/contest-effect", response_model=NamedAPIResourceList)
 async def list_contest_effects(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -35,7 +36,7 @@ async def get_contest_effect(id: int):
 
 # --- Super Contest Effect (id only) ---
 
-@router.get("/super-contest-effect")
+@router.get("/super-contest-effect", response_model=NamedAPIResourceList)
 async def list_super_contest_effects(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):

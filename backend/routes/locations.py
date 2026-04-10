@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 
 from ..pokeapi import pokeapi_get
+from ..schemas import NamedAPIResourceList
 
 router = APIRouter(prefix="/api", tags=["Locations"])
 
 
 # --- Location ---
 
-@router.get("/location")
+@router.get("/location", response_model=NamedAPIResourceList)
 async def list_locations(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -21,7 +22,7 @@ async def get_location(id_or_name: str):
 
 # --- Location Area ---
 
-@router.get("/location-area")
+@router.get("/location-area", response_model=NamedAPIResourceList)
 async def list_location_areas(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -35,7 +36,7 @@ async def get_location_area(id_or_name: str):
 
 # --- Pal Park Area ---
 
-@router.get("/pal-park-area")
+@router.get("/pal-park-area", response_model=NamedAPIResourceList)
 async def list_pal_park_areas(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
@@ -49,7 +50,7 @@ async def get_pal_park_area(id_or_name: str):
 
 # --- Region ---
 
-@router.get("/region")
+@router.get("/region", response_model=NamedAPIResourceList)
 async def list_regions(
     offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
 ):
