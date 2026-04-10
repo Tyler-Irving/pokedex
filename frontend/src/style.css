@@ -85,6 +85,20 @@ nav button.active {
 }
 .fav-btn.active { opacity: 1; }
 
+.cmp-btn {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.35;
+  line-height: 1;
+}
+.cmp-btn.active { opacity: 1; color: #e53e3e; }
+.card.in-compare { box-shadow: 0 0 0 2px #e53e3e, 0 4px 12px rgba(0,0,0,0.15); }
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -174,6 +188,102 @@ nav button.active {
 
 .loading { text-align: center; padding: 3rem; color: #718096; }
 .empty { text-align: center; padding: 3rem; color: #a0aec0; }
+
+/* Compare nav buttons */
+.compare-nav-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e53e3e;
+  background: #e53e3e;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.clear-compare-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #cbd5e0;
+  background: white;
+  color: #4a5568;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Shiny toggle */
+.shiny-btn {
+  background: none;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.shiny-btn.active { background: #fefcbf; border-color: #d69e2e; }
+
+/* Encounters */
+.encounters { margin-top: 1rem; }
+.encounters h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.4rem; color: #2d3748; }
+.encounters ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.encounters li {
+  background: #edf2f7;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+/* Compare modal */
+.compare-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.compare-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: min(900px, 95vw);
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+}
+.compare-panel h2 { text-align: center; }
+.compare-panel .close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.compare-table th, .compare-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+.compare-table .stat-label {
+  text-align: right;
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.compare-table .best {
+  background: #ebf8ff;
+  font-weight: 700;
+  color: #2b6cb0;
+}
 
 /* Type colors */
 .type-normal { background: #a8a878; }
