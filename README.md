@@ -22,6 +22,7 @@ A full-stack Pokédex web application built with **FastAPI** and **React**. Brow
   - [Health & Info](#health--info)
   - [Pokémon](#pokémon)
   - [Favorites](#favorites)
+  - [Teams](#teams)
   - [Types, Abilities & Stats](#types-abilities--stats)
   - [Moves](#moves)
   - [Items & Berries](#items--berries)
@@ -30,6 +31,11 @@ A full-stack Pokédex web application built with **FastAPI** and **React**. Brow
   - [Contests & Machines](#contests--machines)
   - [Utility](#utility)
 - [Frontend Features](#frontend-features)
+  - [Pokémon Grid](#pokémon-grid)
+  - [Pokémon Detail Modal](#pokémon-detail-modal)
+  - [Stat Comparison](#stat-comparison)
+  - [Favorites View](#favorites-view)
+  - [Teams Builder](#teams-builder)
 - [Authentication](#authentication)
 - [Rate Limiting](#rate-limiting)
 - [Caching](#caching)
@@ -46,6 +52,7 @@ A full-stack Pokédex web application built with **FastAPI** and **React**. Brow
 - **Wild Encounter Locations** — see where to catch each Pokémon
 - **Stat Comparison** — compare 2–6 Pokémon side-by-side with stat rankings
 - **Favorites System** — save favorites with persistent SQLite storage
+- **Teams Builder** — create up to 5 named teams of up to 6 Pokémon each, with type coverage analysis
 - **API Key Authentication** — optional key-based auth for protected endpoints
 - **Rate Limiting** — sliding-window per-IP protection (100 req/60s)
 - **LRU Caching** — in-memory cache for PokeAPI responses + HTTP ETags
@@ -84,13 +91,15 @@ pokeapi-copy/
 │   ├── routes/               # One file per API category
 │   │   ├── pokemon.py
 │   │   ├── favorites.py
+│   │   ├── teams.py
 │   │   ├── compare.py
 │   │   ├── encounters.py
 │   │   ├── types.py
-│   │   └── ...               # 12 route modules total
+│   │   └── ...               # 13 route modules total
 │   ├── tests/
 │   │   ├── test_pokemon.py
 │   │   ├── test_favorites.py
+│   │   ├── test_teams.py
 │   │   └── test_rate_limit.py
 │   └── requirements.txt
 ├── frontend/
@@ -253,6 +262,51 @@ CREATE TABLE favorites (
 
 ---
 
+### Teams
+
+> **Requires** `X-API-Key` header if `POKEDEX_API_KEY` is set on the server.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/teams` | List all teams with member counts |
+| `POST` | `/api/teams` | Create a new team (max 5 teams) |
+| `GET` | `/api/teams/{team_id}` | Get a team with its full member roster |
+| `PATCH` | `/api/teams/{team_id}` | Rename a team |
+| `DELETE` | `/api/teams/{team_id}` | Delete a team and all its members |
+| `POST` | `/api/teams/{team_id}/members/{pokemon_id}` | Add a Pokémon to a team (max 6 members) |
+| `DELETE` | `/api/teams/{team_id}/members/{pokemon_id}` | Remove a Pokémon from a team |
+| `GET` | `/api/teams/{team_id}/coverage` | Get type coverage analysis for the team |
+
+**Coverage response:**
+```json
+{
+  "strong": ["grass", "bug", "dark"],
+  "weak": ["rock", "ground"],
+  "no_coverage": ["normal"]
+}
+```
+
+**Teams table schema:**
+```sql
+CREATE TABLE teams (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE team_members (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    pokemon_id  INTEGER NOT NULL,
+    name        TEXT NOT NULL,
+    sprite      TEXT,
+    added_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(team_id, pokemon_id)
+);
+```
+
+---
+
 ### Types, Abilities & Stats
 
 | Method | Path | Description |
@@ -394,6 +448,23 @@ Switch to the Favorites tab to see all saved Pokémon.
 
 ---
 
+### Teams Builder
+
+<!-- SCREENSHOT: Teams view showing a team roster with type coverage panel -->
+![Teams Builder](docs/screenshots/teams.png)
+
+The Teams tab lets you build and analyze Pokémon teams.
+
+- **Create teams** — up to 5 named teams, created via prompt
+- **Add members** — when a team is active, a ➕ button appears on every Pokémon card in the grid and favorites view; grayed out once the team is full (6 members)
+- **Active team banner** — a persistent strip below the nav shows the active team name and current roster count (e.g. `3/6`) while browsing
+- **Rename** — edit the team name inline; saved on blur
+- **Remove members** — click ✕ on any member card in the team view
+- **Delete team** — removes the team and all its members
+- **Type coverage panel** — shown below the roster; breaks down which types your team is strong against, weak against, and has no coverage for
+
+---
+
 ## Authentication
 
 Authentication is **optional**. If `POKEDEX_API_KEY` is not set in the environment, all endpoints are publicly accessible.
@@ -473,6 +544,7 @@ pytest tests/ -v
 | `tests/test_pokemon.py` | List, detail, search, type filter endpoints |
 | `tests/test_favorites.py` | Add, remove, list favorites; auth enforcement |
 | `tests/test_rate_limit.py` | Rate limit enforcement, headers, 429 response |
+| `tests/test_teams.py` | Team CRUD, member management, 6-member cap, duplicate prevention, cascade delete, coverage endpoint |
 
 ---
 
