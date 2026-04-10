@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .database import init_db
-from .middleware import LoggingMiddleware, RateLimitMiddleware, configure_logging
+from .middleware import CacheHeaderMiddleware, LoggingMiddleware, RateLimitMiddleware, configure_logging
 from .pokeapi import build_type_index
 from .routes import (
     berries,
@@ -29,7 +29,7 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    await init_db()
     await build_type_index()
     yield
 
@@ -37,7 +37,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Pokédex", lifespan=lifespan)
 
 # Middleware is applied in reverse registration order (last registered = outermost).
-# Rate limiting runs first (outermost), then logging records the final status.
+# Rate limiting runs first (outermost), then logging records the final status,
+# then cache headers are attached to the response on the way out.
+app.add_middleware(CacheHeaderMiddleware)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_window=100, window_seconds=60)
 
