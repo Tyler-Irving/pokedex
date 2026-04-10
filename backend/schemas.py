@@ -49,6 +49,20 @@ class TypesListResponse(BaseModel):
     types: list[str]
 
 
+# --- Compare ---
+
+class PokemonCompareItem(BaseModel):
+    id: int
+    name: str
+    types: list[str]
+    stats: dict[str, int]
+
+
+class CompareResponse(BaseModel):
+    pokemon: list[PokemonCompareItem]
+    best_in_stat: dict[str, str]
+
+
 # --- Favorites ---
 
 class FavoriteItem(BaseModel):

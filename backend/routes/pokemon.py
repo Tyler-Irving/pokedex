@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Query
+import asyncio
+
+from fastapi import APIRouter, HTTPException, Query
 
 from ..pokeapi import pokeapi_get, _type_index
 from ..schemas import (
+    CompareResponse,
     NamedAPIResourceList,
     PokemonDetail,
     PokemonListResponse,
@@ -79,6 +82,34 @@ async def get_pokemon(pokemon_id: int):
 async def get_pokemon_encounters(id_or_name: str):
     """Get location areas where a pokemon can be found."""
     return await pokeapi_get(f"pokemon/{id_or_name}/encounters")
+
+
+@router.get("/compare", response_model=CompareResponse)
+async def compare_pokemon(ids: str = Query(..., description="Comma-separated list of 2–6 pokemon IDs")):
+    """Compare stats for 2 to 6 pokemon."""
+    id_list = [s.strip() for s in ids.split(",") if s.strip()]
+    if len(id_list) < 2 or len(id_list) > 6:
+        raise HTTPException(status_code=400, detail="Provide between 2 and 6 pokemon IDs.")
+
+    results = await asyncio.gather(*[pokeapi_get(f"pokemon/{pid}") for pid in id_list])
+
+    pokemon = [
+        {
+            "id": data["id"],
+            "name": data["name"],
+            "types": [t["type"]["name"] for t in data["types"]],
+            "stats": {s["stat"]["name"]: s["base_stat"] for s in data["stats"]},
+        }
+        for data in results
+    ]
+
+    stat_names = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"]
+    best_in_stat = {
+        stat: max(pokemon, key=lambda p: p["stats"].get(stat, 0))["name"]
+        for stat in stat_names
+    }
+
+    return {"pokemon": pokemon, "best_in_stat": best_in_stat}
 
 
 # --- Types (enhanced with pre-built index) ---
