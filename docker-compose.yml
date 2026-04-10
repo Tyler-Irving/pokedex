@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - favorites-data:/app/data
+    environment:
+      - POKEDEX_API_KEY
+      - FAVORITES_DB_PATH=/app/data/favorites.db
+volumes:
+  favorites-data:
