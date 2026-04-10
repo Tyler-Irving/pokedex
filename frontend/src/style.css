@@ -304,3 +304,124 @@ nav button.active {
 .type-dark { background: #705848; }
 .type-steel { background: #b8b8d0; color: #1a202c; }
 .type-fairy { background: #ee99ac; }
+
+/* ---- Teams Feature ---- */
+
+.team-add-btn {
+  position: absolute;
+  top: 30px;
+  left: 6px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+  padding: 2px;
+  line-height: 1;
+}
+.team-add-btn:hover:not(:disabled) {
+  opacity: 1;
+}
+.team-add-btn:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+.team-add-btn.on-team {
+  opacity: 0.7;
+  color: #48bb78;
+}
+
+.active-team-banner {
+  background: #2d3748;
+  color: #e2e8f0;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.active-team-banner strong {
+  color: #90cdf4;
+}
+.active-team-count {
+  margin-left: auto;
+  color: #718096;
+  font-size: 0.8rem;
+}
+
+.teams-view {
+  margin-top: 1rem;
+}
+
+.teams-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.teams-controls select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+}
+
+.team-rename {
+  margin: 0.75rem 0;
+}
+
+.team-rename input {
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.team-rename input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.coverage-section {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.coverage-group {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.coverage-group h4 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.coverage-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.coverage-empty {
+  font-size: 0.85rem;
+  color: #a0aec0;
+  font-style: italic;
+}

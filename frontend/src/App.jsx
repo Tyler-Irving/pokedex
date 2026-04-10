@@ -5,7 +5,7 @@ const API_KEY = import.meta.env.VITE_API_KEY ?? "";
 const STAT_NAMES = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"];
 
 export default function App() {
-  const [view, setView] = useState("list"); // list | favorites
+  const [view, setView] = useState("list"); // list | favorites | teams
   const [pokemon, setPokemon] = useState([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -23,6 +23,10 @@ export default function App() {
   const [compareIds, setCompareIds] = useState(new Set());
   const [compareData, setCompareData] = useState(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [teams, setTeams] = useState([]);
+  const [activeTeamId, setActiveTeamId] = useState(null);
+  const [activeTeam, setActiveTeam] = useState(null);
+  const [coverage, setCoverage] = useState(null);
   const pendingFavs = useRef(new Set());
 
   // Fetch types on mount
@@ -53,9 +57,32 @@ export default function App() {
       });
   }, []);
 
+  const loadTeams = useCallback(() => {
+    fetch("/api/teams", { headers: { "X-API-Key": API_KEY }, cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error(`Failed to load teams: ${r.status}`); return r.json(); })
+      .then((data) => setTeams(data.teams))
+      .catch((err) => console.error(err));
+  }, []);
+
+  const loadActiveTeam = useCallback((id) => {
+    if (id == null) { setActiveTeam(null); setCoverage(null); return; }
+    const opts = { headers: { "X-API-Key": API_KEY }, cache: "no-store" };
+    fetch(`/api/teams/${id}`, opts)
+      .then((r) => r.json())
+      .then((teamData) => setActiveTeam(teamData))
+      .catch((err) => console.error(err));
+    fetch(`/api/teams/${id}/coverage`, opts)
+      .then((r) => r.json())
+      .then((coverageData) => setCoverage(coverageData))
+      .catch((err) => console.error(err));
+  }, []);
+
   useEffect(() => {
     loadFavorites();
-  }, [loadFavorites]);
+    loadTeams();
+  }, [loadFavorites, loadTeams]);
+
+  useEffect(() => { loadActiveTeam(activeTeamId); }, [activeTeamId, loadActiveTeam]);
 
   // Fetch pokemon list
   useEffect(() => {
@@ -222,6 +249,36 @@ export default function App() {
       >
         {favorites.has(id) ? "★" : "☆"}
       </button>
+      {activeTeamId != null && (
+        <button
+          className={`team-add-btn${activeTeam?.members?.some((m) => m.pokemon_id === id) ? " on-team" : ""}`}
+          title={
+            activeTeam?.members?.some((m) => m.pokemon_id === id)
+              ? `Already on ${activeTeam?.name ?? "team"}`
+              : (activeTeam?.members?.length ?? 0) >= 6
+              ? `${activeTeam?.name ?? "Team"} is full`
+              : `Add to ${activeTeam?.name ?? "team"}`
+          }
+          disabled={
+            (activeTeam?.members?.length ?? 0) >= 6 ||
+            (activeTeam?.members?.some((m) => m.pokemon_id === id) ?? false)
+          }
+          onClick={(event) => {
+            event.stopPropagation();
+            fetch(`/api/teams/${activeTeamId}/members/${id}`, {
+              method: "POST",
+              headers: { "X-API-Key": API_KEY },
+            })
+              .then((r) => {
+                if (!r.ok) return r.json().then((d) => { throw new Error(d.detail ?? `Add failed: ${r.status}`); });
+              })
+              .then(() => { loadActiveTeam(activeTeamId); loadTeams(); })
+              .catch((err) => { setError(err.message); setTimeout(() => setError(null), 4000); });
+          }}
+        >
+          {activeTeam?.members?.some((m) => m.pokemon_id === id) ? "✓" : "➕"}
+        </button>
+      )}
       <img src={sprite} alt={name} />
       <div className="id">#{String(id).padStart(3, "0")}</div>
       <div className="name">{name}</div>
@@ -247,6 +304,12 @@ export default function App() {
         >
           Favorites ({favorites.size})
         </button>
+        <button
+          className={view === "teams" ? "active" : ""}
+          onClick={() => setView("teams")}
+        >
+          Teams ({teams.length})
+        </button>
         {compareIds.size >= 2 && (
           <button onClick={runCompare} className="compare-nav-btn">
             Compare ({compareIds.size})
@@ -258,6 +321,15 @@ export default function App() {
           </button>
         )}
       </nav>
+
+      {activeTeamId != null && view !== "teams" && (
+        <div className="active-team-banner">
+          Active team: <strong>{activeTeam?.name ?? "Loading…"}</strong>
+          <span className="active-team-count">
+            {activeTeam ? `${activeTeam.members.length}/6` : ""}
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="error" role="alert">
@@ -332,6 +404,162 @@ export default function App() {
             </div>
           )}
         </>
+      )}
+
+      {view === "teams" && (
+        <div className="teams-view">
+          <div className="teams-controls">
+            <select
+              value={activeTeamId ?? ""}
+              onChange={(e) =>
+                setActiveTeamId(e.target.value ? Number(e.target.value) : null)
+              }
+            >
+              <option value="">-- Select a team --</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.member_count}/6)
+                </option>
+              ))}
+            </select>
+            <button
+              disabled={teams.length >= 5}
+              title={teams.length >= 5 ? "Max 5 teams reached" : "Create a new team"}
+              onClick={async () => {
+                const name = window.prompt("Team name:");
+                if (!name || !name.trim()) return;
+                const r = await fetch("/api/teams", {
+                  method: "POST",
+                  headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+                  body: JSON.stringify({ name: name.trim() }),
+                });
+                if (r.ok) {
+                  const newTeam = await r.json();
+                  loadTeams();
+                  setActiveTeamId(newTeam.id);
+                }
+              }}
+            >
+              + New Team
+            </button>
+            {activeTeamId != null && (
+              <button
+                onClick={async () => {
+                  if (!window.confirm("Delete this team and all its members?")) return;
+                  await fetch(`/api/teams/${activeTeamId}`, {
+                    method: "DELETE",
+                    headers: { "X-API-Key": API_KEY },
+                  });
+                  setActiveTeamId(null);
+                  loadTeams();
+                }}
+              >
+                Delete Team
+              </button>
+            )}
+          </div>
+
+          {activeTeam != null && (
+            <>
+              <div className="team-rename">
+                <input
+                  key={activeTeam.id}
+                  type="text"
+                  defaultValue={activeTeam.name}
+                  placeholder="Team name"
+                  onBlur={async (e) => {
+                    const newName = e.target.value.trim();
+                    if (!newName || newName === activeTeam.name) return;
+                    const r = await fetch(`/api/teams/${activeTeamId}`, {
+                      method: "PATCH",
+                      headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: newName }),
+                    });
+                    if (r.ok) { loadTeams(); loadActiveTeam(activeTeamId); }
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "0.5rem", color: "#718096", fontSize: "0.9rem" }}>
+                {activeTeam.members.length}/6 members
+              </div>
+
+              {activeTeam.members.length === 0 ? (
+                <div className="empty">
+                  No members yet. Browse Pokémon and use ➕ to add them here!
+                </div>
+              ) : (
+                <div className="grid">
+                  {activeTeam.members.map((m) => (
+                    <div key={m.pokemon_id} className="card">
+                      <button
+                        className="fav-btn"
+                        title="Remove from team"
+                        style={{ opacity: 1 }}
+                        onClick={async () => {
+                          await fetch(`/api/teams/${activeTeamId}/members/${m.pokemon_id}`, {
+                            method: "DELETE",
+                            headers: { "X-API-Key": API_KEY },
+                          });
+                          loadActiveTeam(activeTeamId);
+                          loadTeams();
+                        }}
+                      >
+                        ✕
+                      </button>
+                      <img src={m.sprite} alt={m.name} />
+                      <div className="name">{m.name}</div>
+                      <div className="id">#{String(m.pokemon_id).padStart(3, "0")}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {coverage != null && (
+                <div className="coverage-section">
+                  <div className="coverage-group">
+                    <h4>Strong Against</h4>
+                    <div className="coverage-types">
+                      {coverage.strong.length === 0
+                        ? <span className="coverage-empty">None</span>
+                        : coverage.strong.map((t) => (
+                            <span key={t} className={`type-badge type-${t}`}>{t}</span>
+                          ))}
+                    </div>
+                  </div>
+                  <div className="coverage-group">
+                    <h4>Weak Against</h4>
+                    <div className="coverage-types">
+                      {coverage.weak.length === 0
+                        ? <span className="coverage-empty">None</span>
+                        : coverage.weak.map((t) => (
+                            <span key={t} className={`type-badge type-${t}`}>{t}</span>
+                          ))}
+                    </div>
+                  </div>
+                  <div className="coverage-group">
+                    <h4>No Coverage</h4>
+                    <div className="coverage-types">
+                      {coverage.no_coverage.length === 0
+                        ? <span className="coverage-empty">None</span>
+                        : coverage.no_coverage.map((t) => (
+                            <span key={t} className={`type-badge type-${t}`}>{t}</span>
+                          ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTeam == null && teams.length > 0 && (
+            <div className="empty">Select a team from the dropdown above.</div>
+          )}
+
+          {teams.length === 0 && (
+            <div className="empty">No teams yet. Click "+ New Team" to create one!</div>
+          )}
+        </div>
       )}
 
       {/* Detail modal */}
