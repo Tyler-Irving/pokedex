@@ -1,3 +1,4 @@
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -5,9 +6,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .database import init_db
+from .database import get_db, init_db
 from .middleware import CacheHeaderMiddleware, LoggingMiddleware, RateLimitMiddleware, configure_logging
-from .pokeapi import build_type_index
+from .pokeapi import _cache, build_type_index
 from .routes import (
     berries,
     contests,
@@ -25,6 +26,8 @@ from .routes import (
 
 
 configure_logging()
+
+_start_time = time.time()
 
 
 @asynccontextmanager
@@ -141,6 +144,25 @@ async def api_index():
         "utility": {
             "language": "/api/language",
         },
+    }
+
+
+# --------------- Health check ---------------
+
+@app.get("/api/health")
+async def health():
+    db_status = "ok"
+    try:
+        db = await get_db()
+        await db.execute("SELECT 1")
+        await db.close()
+    except Exception:
+        db_status = "error"
+    return {
+        "status": "ok",
+        "uptime_seconds": time.time() - _start_time,
+        "cache_entries": len(_cache),
+        "db": db_status,
     }
 
 

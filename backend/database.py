@@ -2,7 +2,7 @@ import os
 
 import aiosqlite
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "favorites.db")
+DB_PATH = os.environ.get("FAVORITES_DB_PATH", os.path.join(os.path.dirname(__file__), "favorites.db"))
 
 
 async def get_db() -> aiosqlite.Connection:
