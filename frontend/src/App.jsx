@@ -28,24 +28,24 @@ export default function App() {
   // Fetch types on mount
   useEffect(() => {
     fetch("/api/types", { headers: { "X-API-Key": API_KEY } })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load types: ${r.status}`);
-        return r.json();
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load types: ${response.status}`);
+        return response.json();
       })
-      .then((d) => setTypes(d.types))
+      .then((data) => setTypes(data.types))
       .catch((err) => console.error(err));
   }, []);
 
   // Fetch favorites set
   const loadFavorites = useCallback(() => {
     fetch("/api/favorites", { headers: { "X-API-Key": API_KEY } })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load favorites: ${r.status}`);
-        return r.json();
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load favorites: ${response.status}`);
+        return response.json();
       })
-      .then((d) => {
-        setFavList(d.favorites);
-        setFavorites(new Set(d.favorites.map((f) => f.pokemon_id)));
+      .then((data) => {
+        setFavList(data.favorites);
+        setFavorites(new Set(data.favorites.map((fav) => fav.pokemon_id)));
       })
       .catch((err) => {
         console.error(err);
@@ -70,13 +70,13 @@ export default function App() {
     if (typeFilter) params.set("type", typeFilter);
 
     fetch(`/api/pokemon?${params}`, { headers: { "X-API-Key": API_KEY } })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load Pokémon: ${r.status}`);
-        return r.json();
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load Pokémon: ${response.status}`);
+        return response.json();
       })
-      .then((d) => {
-        setPokemon(d.results);
-        setTotal(d.total);
+      .then((data) => {
+        setPokemon(data.results);
+        setTotal(data.total);
       })
       .catch((err) => {
         console.error(err);
@@ -103,9 +103,9 @@ export default function App() {
     setEncounters(null);
 
     fetch(`/api/pokemon/${selected}`, { headers: { "X-API-Key": API_KEY } })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load Pokémon detail: ${r.status}`);
-        return r.json();
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load Pokémon detail: ${response.status}`);
+        return response.json();
       })
       .then(setDetail)
       .catch((err) => {
@@ -114,22 +114,22 @@ export default function App() {
       });
 
     fetch(`/api/pokemon/${selected}/encounters`, { headers: { "X-API-Key": API_KEY } })
-      .then((r) => (r.ok ? r.json() : []))
+      .then((response) => (response.ok ? response.json() : []))
       .then(setEncounters)
       .catch(() => setEncounters([]));
   }, [selected]);
 
-  const toggleFav = async (id, e) => {
-    e?.stopPropagation();
+  const toggleFav = async (id, event) => {
+    event?.stopPropagation();
     if (pendingFavs.current.has(id)) return;
     pendingFavs.current.add(id);
     try {
       const method = favorites.has(id) ? "DELETE" : "POST";
-      const r = await fetch(`/api/favorites/${id}`, {
+      const response = await fetch(`/api/favorites/${id}`, {
         method,
         headers: { "X-API-Key": API_KEY },
       });
-      if (!r.ok) throw new Error(`Failed to update favorite: ${r.status}`);
+      if (!response.ok) throw new Error(`Failed to update favorite: ${response.status}`);
       loadFavorites();
     } catch (err) {
       console.error(err);
@@ -139,10 +139,10 @@ export default function App() {
     }
   };
 
-  const toggleCompare = (id, e) => {
-    e?.stopPropagation();
-    setCompareIds((prev) => {
-      const next = new Set(prev);
+  const toggleCompare = (id, event) => {
+    event?.stopPropagation();
+    setCompareIds((prevIds) => {
+      const next = new Set(prevIds);
       if (next.has(id)) {
         next.delete(id);
       } else if (next.size < 6) {
@@ -157,11 +157,11 @@ export default function App() {
     setCompareLoading(true);
     setCompareData(null);
     try {
-      const r = await fetch(`/api/compare?ids=${[...compareIds].join(",")}`, {
+      const response = await fetch(`/api/compare?ids=${[...compareIds].join(",")}`, {
         headers: { "X-API-Key": API_KEY },
       });
-      if (!r.ok) throw new Error("Failed to compare Pokémon");
-      setCompareData(await r.json());
+      if (!response.ok) throw new Error("Failed to compare Pokémon");
+      setCompareData(await response.json());
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -173,7 +173,7 @@ export default function App() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
-  const renderCard = (p, id, name, sprite) => (
+  const renderCard = (id, name, sprite) => (
     <div
       key={id}
       className={`card${compareIds.has(id) ? " in-compare" : ""}`}
@@ -182,13 +182,13 @@ export default function App() {
       <button
         className={`cmp-btn ${compareIds.has(id) ? "active" : ""}`}
         title={compareIds.has(id) ? "Remove from compare" : "Add to compare"}
-        onClick={(e) => toggleCompare(id, e)}
+        onClick={(event) => toggleCompare(id, event)}
       >
         ⚔
       </button>
       <button
         className={`fav-btn ${favorites.has(id) ? "active" : ""}`}
-        onClick={(e) => toggleFav(id, e)}
+        onClick={(event) => toggleFav(id, event)}
       >
         {favorites.has(id) ? "★" : "☆"}
       </button>
@@ -242,16 +242,16 @@ export default function App() {
               type="text"
               placeholder="Search by name..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
             />
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(event) => setTypeFilter(event.target.value)}
             >
               <option value="">All types</option>
-              {types.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+              {types.map((typeName) => (
+                <option key={typeName} value={typeName}>
+                  {typeName.charAt(0).toUpperCase() + typeName.slice(1)}
                 </option>
               ))}
             </select>
@@ -264,12 +264,12 @@ export default function App() {
           ) : (
             <>
               <div className="grid">
-                {pokemon.map((p) => renderCard(p, p.id, p.name, p.sprite))}
+                {pokemon.map((poke) => renderCard(poke.id, poke.name, poke.sprite))}
               </div>
               <div className="pagination">
                 <button
                   disabled={offset === 0}
-                  onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
+                  onClick={() => setOffset((prevOffset) => Math.max(0, prevOffset - PAGE_SIZE))}
                 >
                   Previous
                 </button>
@@ -278,7 +278,7 @@ export default function App() {
                 </span>
                 <button
                   disabled={offset + PAGE_SIZE >= total}
-                  onClick={() => setOffset((o) => o + PAGE_SIZE)}
+                  onClick={() => setOffset((prevOffset) => prevOffset + PAGE_SIZE)}
                 >
                   Next
                 </button>
@@ -296,8 +296,8 @@ export default function App() {
             </div>
           ) : (
             <div className="grid">
-              {favList.map((p) =>
-                renderCard(p, p.pokemon_id, p.name, p.sprite)
+              {favList.map((fav) =>
+                renderCard(fav.pokemon_id, fav.name, fav.sprite)
               )}
             </div>
           )}
@@ -307,7 +307,7 @@ export default function App() {
       {/* Detail modal */}
       {selected != null && (
         <div className="detail-overlay" onClick={() => setSelected(null)}>
-          <div className="detail" onClick={(e) => e.stopPropagation()}>
+          <div className="detail" onClick={(event) => event.stopPropagation()}>
             <button className="close" onClick={() => setSelected(null)}>
               ×
             </button>
@@ -322,9 +322,9 @@ export default function App() {
                   />
                   <h2>{detail.name}</h2>
                   <div className="types">
-                    {detail.types.map((t) => (
-                      <span key={t} className={`type-badge type-${t}`}>
-                        {t}
+                    {detail.types.map((typeName) => (
+                      <span key={typeName} className={`type-badge type-${typeName}`}>
+                        {typeName}
                       </span>
                     ))}
                   </div>
@@ -332,7 +332,7 @@ export default function App() {
                     {detail.sprite_shiny && (
                       <button
                         className={`shiny-btn ${showShiny ? "active" : ""}`}
-                        onClick={() => setShowShiny((s) => !s)}
+                        onClick={() => setShowShiny((prevShiny) => !prevShiny)}
                       >
                         {showShiny ? "✨ Shiny" : "✨ Normal"}
                       </button>
@@ -340,7 +340,7 @@ export default function App() {
                     <button
                       className={`fav-btn ${favorites.has(detail.id) ? "active" : ""}`}
                       style={{ position: "static", fontSize: "1.5rem", opacity: 1 }}
-                      onClick={(e) => toggleFav(detail.id, e)}
+                      onClick={(event) => toggleFav(detail.id, event)}
                     >
                       {favorites.has(detail.id) ? "★ Remove Favorite" : "☆ Add Favorite"}
                     </button>
@@ -354,23 +354,23 @@ export default function App() {
                   </p>
                   <p>
                     <strong>Abilities:</strong>{" "}
-                    {detail.abilities.map((a) => a.replace("-", " ")).join(", ")}
+                    {detail.abilities.map((ability) => ability.replace("-", " ")).join(", ")}
                   </p>
                 </div>
 
                 <div className="stats">
-                  {Object.entries(detail.stats).map(([name, val]) => (
-                    <div key={name} className="stat-row">
+                  {Object.entries(detail.stats).map(([statName, statValue]) => (
+                    <div key={statName} className="stat-row">
                       <span className="stat-name">
-                        {name.replace("special-", "sp. ")}
+                        {statName.replace("special-", "sp. ")}
                       </span>
                       <div className="stat-bar">
                         <div
                           className="stat-fill"
-                          style={{ width: `${Math.min(100, (val / 255) * 100)}%` }}
+                          style={{ width: `${Math.min(100, (statValue / 255) * 100)}%` }}
                         />
                       </div>
-                      <span className="stat-val">{val}</span>
+                      <span className="stat-val">{statValue}</span>
                     </div>
                   ))}
                 </div>
@@ -387,9 +387,9 @@ export default function App() {
                     <p style={{ color: "#a0aec0", fontSize: "0.85rem" }}>Not found in the wild.</p>
                   ) : (
                     <ul>
-                      {encounters.map((enc) => (
-                        <li key={enc.location_area.name}>
-                          {enc.location_area.name.replace(/-/g, " ")}
+                      {encounters.map((encounter) => (
+                        <li key={encounter.location_area.name}>
+                          {encounter.location_area.name.replace(/-/g, " ")}
                         </li>
                       ))}
                     </ul>
@@ -404,7 +404,7 @@ export default function App() {
       {/* Compare modal */}
       {compareData != null && (
         <div className="compare-overlay" onClick={() => setCompareData(null)}>
-          <div className="compare-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="compare-panel" onClick={(event) => event.stopPropagation()}>
             <button className="close" onClick={() => setCompareData(null)}>×</button>
             <h2 style={{ marginBottom: "1rem" }}>Stat Comparison</h2>
             {compareLoading ? (
@@ -415,17 +415,17 @@ export default function App() {
                   <thead>
                     <tr>
                       <th className="stat-label"></th>
-                      {compareData.pokemon.map((p) => (
-                        <th key={p.id}>
+                      {compareData.pokemon.map((poke) => (
+                        <th key={poke.id}>
                           <img
-                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`}
-                            alt={p.name}
+                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${poke.id}.png`}
+                            alt={poke.name}
                             style={{ width: 64, height: 64, imageRendering: "pixelated" }}
                           />
-                          <div style={{ textTransform: "capitalize" }}>{p.name}</div>
+                          <div style={{ textTransform: "capitalize" }}>{poke.name}</div>
                           <div style={{ display: "flex", gap: "0.2rem", justifyContent: "center", flexWrap: "wrap", marginTop: "0.25rem" }}>
-                            {p.types.map((t) => (
-                              <span key={t} className={`type-badge type-${t}`}>{t}</span>
+                            {poke.types.map((typeName) => (
+                              <span key={typeName} className={`type-badge type-${typeName}`}>{typeName}</span>
                             ))}
                           </div>
                         </th>
@@ -436,13 +436,13 @@ export default function App() {
                     {STAT_NAMES.map((stat) => (
                       <tr key={stat}>
                         <td className="stat-label">{stat.replace("special-", "sp. ")}</td>
-                        {compareData.pokemon.map((p) => (
+                        {compareData.pokemon.map((poke) => (
                           <td
-                            key={p.id}
-                            className={compareData.best_in_stat[stat] === p.name ? "best" : ""}
+                            key={poke.id}
+                            className={compareData.best_in_stat[stat] === poke.name ? "best" : ""}
                           >
-                            {p.stats[stat] ?? "—"}
-                            {compareData.best_in_stat[stat] === p.name && " ★"}
+                            {poke.stats[stat] ?? "—"}
+                            {compareData.best_in_stat[stat] === poke.name && " ★"}
                           </td>
                         ))}
                       </tr>
