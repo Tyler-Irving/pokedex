@@ -25,7 +25,10 @@ async def list_pokemon(
 ):
     """List pokemon with pagination, optional search and type filter."""
     data = await pokeapi_get("pokemon?limit=1302&offset=0")
-    results = data["results"]
+    results = [
+        r for r in data["results"]
+        if int(r["url"].rstrip("/").split("/")[-1]) < 10000
+    ]
 
     if search:
         q = search.lower()
@@ -56,7 +59,8 @@ async def list_pokemon(
 async def get_pokemon(pokemon_id: int):
     """Get detailed info for a single pokemon."""
     data = await pokeapi_get(f"pokemon/{pokemon_id}")
-    species = await pokeapi_get(f"pokemon-species/{pokemon_id}")
+    species_path = data["species"]["url"].split("/api/v2/")[1]
+    species = await pokeapi_get(species_path)
 
     flavor = ""
     for entry in species.get("flavor_text_entries", []):
@@ -67,7 +71,7 @@ async def get_pokemon(pokemon_id: int):
     return {
         "id": data["id"],
         "name": data["name"],
-        "sprite": data["sprites"]["front_default"],
+        "sprite": data["sprites"].get("front_default"),
         "sprite_shiny": data["sprites"].get("front_shiny"),
         "types": [t["type"]["name"] for t in data["types"]],
         "stats": {s["stat"]["name"]: s["base_stat"] for s in data["stats"]},
@@ -91,7 +95,17 @@ async def compare_pokemon(ids: str = Query(..., description="Comma-separated lis
     if len(id_list) < 2 or len(id_list) > 6:
         raise HTTPException(status_code=400, detail="Provide between 2 and 6 pokemon IDs.")
 
-    results = await asyncio.gather(*[pokeapi_get(f"pokemon/{pid}") for pid in id_list])
+    results = await asyncio.gather(
+        *[pokeapi_get(f"pokemon/{pid}") for pid in id_list],
+        return_exceptions=True,
+    )
+
+    invalid_ids = [id_list[i] for i, r in enumerate(results) if isinstance(r, Exception)]
+    if invalid_ids:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Invalid or unknown pokemon ID(s): {', '.join(invalid_ids)}",
+        )
 
     pokemon = [
         {

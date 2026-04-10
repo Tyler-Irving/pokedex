@@ -48,8 +48,9 @@ async def remove_favorite(pokemon_id: int, _: None = Depends(require_api_key)):
             "DELETE FROM favorites WHERE pokemon_id = ?", (pokemon_id,)
         )
         await db.commit()
+        rowcount = cursor.rowcount
     finally:
         await db.close()
-    if cursor.rowcount == 0:
+    if rowcount == 0:
         raise HTTPException(status_code=404, detail="Not in favorites")
     return {"ok": True}

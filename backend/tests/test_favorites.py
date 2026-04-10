@@ -5,6 +5,7 @@ Uses a temporary aiosqlite database and mocks pokeapi_get so no real
 HTTP calls or persistent DB writes occur.
 """
 
+import os
 from unittest.mock import patch
 
 import pytest
@@ -99,3 +100,44 @@ class TestRemoveFavorite:
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.delete("/api/favorites/99999")
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Auth enforcement tests
+# ---------------------------------------------------------------------------
+
+class TestAuthEnforcement:
+    """Verify that when POKEDEX_API_KEY is set the key header is enforced."""
+
+    @patch("backend.routes.favorites.pokeapi_get")
+    def test_missing_key_returns_401(self, mock_get, monkeypatch):
+        monkeypatch.setenv("POKEDEX_API_KEY", "secret-test-key")
+        mock_get.side_effect = _mock_pokeapi_get()
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.get("/api/favorites")
+        assert resp.status_code == 401
+
+    @patch("backend.routes.favorites.pokeapi_get")
+    def test_wrong_key_returns_401(self, mock_get, monkeypatch):
+        monkeypatch.setenv("POKEDEX_API_KEY", "secret-test-key")
+        mock_get.side_effect = _mock_pokeapi_get()
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.get("/api/favorites", headers={"X-API-Key": "wrong-key"})
+        assert resp.status_code == 401
+
+    @patch("backend.routes.favorites.pokeapi_get")
+    def test_correct_key_succeeds(self, mock_get, monkeypatch):
+        monkeypatch.setenv("POKEDEX_API_KEY", "secret-test-key")
+        mock_get.side_effect = _mock_pokeapi_get()
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.get("/api/favorites", headers={"X-API-Key": "secret-test-key"})
+        assert resp.status_code == 200
+
+    @patch("backend.routes.favorites.pokeapi_get")
+    def test_correct_key_allows_add(self, mock_get, monkeypatch):
+        monkeypatch.setenv("POKEDEX_API_KEY", "secret-test-key")
+        mock_get.side_effect = _mock_pokeapi_get()
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.post("/api/favorites/1", headers={"X-API-Key": "secret-test-key"})
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True

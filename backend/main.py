@@ -1,3 +1,4 @@
+import logging
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -30,10 +31,16 @@ configure_logging()
 _start_time = time.time()
 
 
+_logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    await build_type_index()
+    try:
+        await build_type_index()
+    except Exception:
+        _logger.warning("build_type_index() failed at startup; type filtering will be unavailable", exc_info=True)
     yield
 
 
