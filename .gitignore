@@ -5,3 +5,5 @@ backend/*.db
 __pycache__/
 *.pyc
 .venv/
+.DS_store
+settings.json
