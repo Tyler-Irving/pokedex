@@ -133,15 +133,35 @@ export default function App() {
     event?.stopPropagation();
     if (pendingFavs.current.has(id)) return;
     pendingFavs.current.add(id);
+
+    const wasFav = favorites.has(id);
+
+    // Optimistic update
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (wasFav) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    if (wasFav) {
+      setFavList((prev) => prev.filter((fav) => fav.pokemon_id !== id));
+    } else {
+      const pokemonData = pokemon.find((p) => p.id === id) ?? (detail?.id === id ? detail : null);
+      if (pokemonData) {
+        setFavList((prev) => [...prev, { pokemon_id: id, name: pokemonData.name, sprite: pokemonData.sprite }]);
+      }
+    }
+
     try {
-      const method = favorites.has(id) ? "DELETE" : "POST";
+      const method = wasFav ? "DELETE" : "POST";
       const response = await fetch(`/api/favorites/${id}`, {
         method,
         headers: { "X-API-Key": API_KEY },
       });
       if (!response.ok) throw new Error(`Failed to update favorite: ${response.status}`);
-      loadFavorites();
     } catch (err) {
+      // Revert optimistic update
+      loadFavorites();
       console.error(err);
       setError(err.message);
     } finally {
@@ -344,7 +364,7 @@ export default function App() {
                         className={`shiny-btn ${showShiny ? "active" : ""}`}
                         onClick={() => setShowShiny((prevShiny) => !prevShiny)}
                       >
-                        {showShiny ? "✨ Shiny" : "✨ Normal"}
+                        {showShiny ? "✨ Normal" : "✨ Shiny"}
                       </button>
                     )}
                     <button
@@ -397,9 +417,9 @@ export default function App() {
                     <p style={{ color: "#a0aec0", fontSize: "0.85rem" }}>Not found in the wild.</p>
                   ) : (
                     <ul>
-                      {encounters.map((encounter) => (
-                        <li key={encounter.location_area.name}>
-                          {encounter.location_area.name.replace(/-/g, " ")}
+                      {encounters.map((encounter, index) => (
+                        <li key={encounter?.location_area?.name ?? index}>
+                          {encounter?.location_area?.name?.replace(/-/g, " ") ?? "Unknown location"}
                         </li>
                       ))}
                     </ul>
@@ -428,7 +448,7 @@ export default function App() {
                       {compareData.pokemon.map((poke) => (
                         <th key={poke.id}>
                           <img
-                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${poke.id}.png`}
+                            src={poke.sprite}
                             alt={poke.name}
                             style={{ width: 64, height: 64, imageRendering: "pixelated" }}
                           />
