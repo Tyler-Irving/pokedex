@@ -4,7 +4,9 @@ import time
 from collections import OrderedDict
 
 import httpx
-from fastapi import HTTPException
+from fastapi import APIRouter, HTTPException, Query
+
+from .schemas import NamedAPIResourceList
 
 POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
@@ -78,6 +80,46 @@ async def build_type_index():
         _type_index[type_entry["name"]] = [
             pokemon_entry["pokemon"]["name"] for pokemon_entry in type_data["pokemon"]
         ]
+
+
+def register_named_api_routes(
+    router: APIRouter,
+    resource: str,
+    *,
+    id_only: bool = False,
+) -> None:
+    """Register standard list + detail proxy routes for a PokeAPI resource.
+
+    Adds two routes to ``router``:
+      - ``GET /{resource}``                     → paginated list
+      - ``GET /{resource}/{id_or_name}`` (or ``{id}`` when ``id_only``)
+
+    ``id_only=True`` is used for resources whose detail endpoint only
+    accepts a numeric id (evolution-chain, machine, contest-effect, ...).
+    """
+
+    async def _list(
+        offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
+    ):
+        return await pokeapi_get(f"{resource}?limit={limit}&offset={offset}")
+
+    router.add_api_route(
+        f"/{resource}",
+        _list,
+        methods=["GET"],
+        response_model=NamedAPIResourceList,
+    )
+
+    if id_only:
+        async def _detail(id: int):
+            return await pokeapi_get(f"{resource}/{id}")
+
+        router.add_api_route(f"/{resource}/{{id}}", _detail, methods=["GET"])
+    else:
+        async def _detail(id_or_name: str):
+            return await pokeapi_get(f"{resource}/{id_or_name}")
+
+        router.add_api_route(f"/{resource}/{{id_or_name}}", _detail, methods=["GET"])
 
 
 _type_chart: dict[str, dict] = {}

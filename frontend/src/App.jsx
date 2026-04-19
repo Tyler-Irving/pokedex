@@ -230,7 +230,11 @@ export default function App() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
-  const renderCard = (id, name, sprite) => (
+  const renderCard = (id, name, sprite) => {
+    const onActiveTeam = activeTeam?.members?.some((m) => m.pokemon_id === id) ?? false;
+    const teamFull = (activeTeam?.members?.length ?? 0) >= 6;
+    const teamName = activeTeam?.name ?? "team";
+    return (
     <div
       key={id}
       className={`card${compareIds.has(id) ? " in-compare" : ""}`}
@@ -251,18 +255,15 @@ export default function App() {
       </button>
       {activeTeamId != null && (
         <button
-          className={`team-add-btn${activeTeam?.members?.some((m) => m.pokemon_id === id) ? " on-team" : ""}`}
+          className={`team-add-btn${onActiveTeam ? " on-team" : ""}`}
           title={
-            activeTeam?.members?.some((m) => m.pokemon_id === id)
-              ? `Already on ${activeTeam?.name ?? "team"}`
-              : (activeTeam?.members?.length ?? 0) >= 6
-              ? `${activeTeam?.name ?? "Team"} is full`
-              : `Add to ${activeTeam?.name ?? "team"}`
+            onActiveTeam
+              ? `Already on ${teamName}`
+              : teamFull
+              ? `${teamName} is full`
+              : `Add to ${teamName}`
           }
-          disabled={
-            (activeTeam?.members?.length ?? 0) >= 6 ||
-            (activeTeam?.members?.some((m) => m.pokemon_id === id) ?? false)
-          }
+          disabled={teamFull || onActiveTeam}
           onClick={(event) => {
             event.stopPropagation();
             fetch(`/api/teams/${activeTeamId}/members/${id}`, {
@@ -276,14 +277,15 @@ export default function App() {
               .catch((err) => { setError(err.message); setTimeout(() => setError(null), 4000); });
           }}
         >
-          {activeTeam?.members?.some((m) => m.pokemon_id === id) ? "✓" : "➕"}
+          {onActiveTeam ? "✓" : "➕"}
         </button>
       )}
       <img src={sprite} alt={name} />
       <div className="id">#{String(id).padStart(3, "0")}</div>
       <div className="name">{name}</div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="app">
@@ -519,36 +521,22 @@ export default function App() {
 
               {coverage != null && (
                 <div className="coverage-section">
-                  <div className="coverage-group">
-                    <h4>Strong Against</h4>
-                    <div className="coverage-types">
-                      {coverage.strong.length === 0
-                        ? <span className="coverage-empty">None</span>
-                        : coverage.strong.map((t) => (
-                            <span key={t} className={`type-badge type-${t}`}>{t}</span>
-                          ))}
+                  {[
+                    ["Strong Against", coverage.strong],
+                    ["Weak Against", coverage.weak],
+                    ["No Coverage", coverage.no_coverage],
+                  ].map(([title, types]) => (
+                    <div key={title} className="coverage-group">
+                      <h4>{title}</h4>
+                      <div className="coverage-types">
+                        {types.length === 0
+                          ? <span className="coverage-empty">None</span>
+                          : types.map((t) => (
+                              <span key={t} className={`type-badge type-${t}`}>{t}</span>
+                            ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="coverage-group">
-                    <h4>Weak Against</h4>
-                    <div className="coverage-types">
-                      {coverage.weak.length === 0
-                        ? <span className="coverage-empty">None</span>
-                        : coverage.weak.map((t) => (
-                            <span key={t} className={`type-badge type-${t}`}>{t}</span>
-                          ))}
-                    </div>
-                  </div>
-                  <div className="coverage-group">
-                    <h4>No Coverage</h4>
-                    <div className="coverage-types">
-                      {coverage.no_coverage.length === 0
-                        ? <span className="coverage-empty">None</span>
-                        : coverage.no_coverage.map((t) => (
-                            <span key={t} className={`type-badge type-${t}`}>{t}</span>
-                          ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </>

@@ -22,6 +22,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from ._client_ip import get_client_ip
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
@@ -55,26 +57,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
-
-    def _get_client_ip(self, request: Request) -> str:
-        """
-        Resolve the real client IP, honouring common reverse-proxy headers.
-
-        Priority order:
-        1. X-Forwarded-For (first address in the list)
-        2. X-Real-IP
-        3. Direct connection IP from the ASGI scope
-        """
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip.strip()
-
-        client = request.client
-        return client.host if client else "unknown"
 
     def _evict_old_timestamps(self, timestamps: Deque[float], now: float) -> None:
         """Remove timestamps that have fallen outside the current window."""
@@ -113,7 +95,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     # ------------------------------------------------------------------
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        ip = self._get_client_ip(request)
+        ip = get_client_ip(request)
         now = time.time()
 
         async with self._lock:

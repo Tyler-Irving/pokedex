@@ -24,6 +24,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from ._client_ip import get_client_ip
+
 
 # ---------------------------------------------------------------------------
 # JSON log formatter
@@ -92,20 +94,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         The ASGI application to wrap.
     """
 
-    @staticmethod
-    def _get_client_ip(request: Request) -> str:
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip.strip()
-        client = request.client
-        return client.host if client else "unknown"
-
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
-        client_ip = self._get_client_ip(request)
+        client_ip = get_client_ip(request)
         path = request.url.path
         if request.url.query:
             path = f"{path}?{request.url.query}"
