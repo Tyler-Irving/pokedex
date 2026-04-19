@@ -26,7 +26,6 @@ class CacheHeaderMiddleware(BaseHTTPMiddleware):
         if request.url.path.startswith("/api/teams") or request.url.path.startswith("/api/favorites"):
             return response
 
-        # Buffer the body so we can hash it and support 304.
         body = b""
         async for chunk in response.body_iterator:
             body += chunk

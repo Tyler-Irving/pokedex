@@ -22,21 +22,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from ._client_ip import get_client_ip
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """
-    Sliding-window rate limiter keyed by client IP address.
-
-    Parameters
-    ----------
-    app:
-        The ASGI application to wrap.
-    requests_per_window:
-        Maximum number of requests allowed within ``window_seconds``.
-        Defaults to 100.
-    window_seconds:
-        Length of the sliding window in seconds.  Defaults to 60.
-    """
+    """Sliding-window rate limiter keyed by client IP address."""
 
     def __init__(
         self,
@@ -51,30 +41,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # ip -> deque of request timestamps (float, seconds since epoch)
         self._store: dict[str, Deque[float]] = defaultdict(deque)
         self._lock = asyncio.Lock()
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _get_client_ip(self, request: Request) -> str:
-        """
-        Resolve the real client IP, honouring common reverse-proxy headers.
-
-        Priority order:
-        1. X-Forwarded-For (first address in the list)
-        2. X-Real-IP
-        3. Direct connection IP from the ASGI scope
-        """
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip.strip()
-
-        client = request.client
-        return client.host if client else "unknown"
 
     def _evict_old_timestamps(self, timestamps: Deque[float], now: float) -> None:
         """Remove timestamps that have fallen outside the current window."""
@@ -108,12 +74,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         headers["Content-Type"] = "application/json"
         return Response(content=body, status_code=429, headers=headers)
 
-    # ------------------------------------------------------------------
-    # Middleware dispatch
-    # ------------------------------------------------------------------
-
     async def dispatch(self, request: Request, call_next) -> Response:
-        ip = self._get_client_ip(request)
+        ip = get_client_ip(request)
         now = time.time()
 
         async with self._lock:
@@ -123,19 +85,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             current_count = len(timestamps)
 
             if current_count >= self.requests_per_window:
-                # The oldest timestamp in the deque marks when a slot frees up.
+                # Oldest timestamp in the deque marks when a slot frees up.
                 reset_at = timestamps[0] + self.window_seconds
                 return self._too_many_requests_response(reset_at)
 
-            # Admit the request and record the timestamp.
             timestamps.append(now)
             remaining = self.requests_per_window - len(timestamps)
-            # Reset time is when the oldest recorded request will expire.
             reset_at = timestamps[0] + self.window_seconds
 
         response = await call_next(request)
 
-        # Attach rate-limit headers to every successful response.
         rl_headers = self._build_rate_limit_headers(remaining=remaining, reset_at=reset_at)
         for header_name, header_value in rl_headers.items():
             response.headers[header_name] = header_value

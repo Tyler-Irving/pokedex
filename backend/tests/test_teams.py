@@ -6,6 +6,7 @@ real HTTP calls or persistent DB writes occur.
 """
 
 import asyncio
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -14,10 +15,6 @@ from fastapi.testclient import TestClient
 from backend.database import init_db
 from backend.main import app
 
-
-# ---------------------------------------------------------------------------
-# Fixtures & helpers
-# ---------------------------------------------------------------------------
 
 FAKE_POKEMON = {
     "name": "bulbasaur",
@@ -84,19 +81,11 @@ def _use_tmp_db(tmp_path, monkeypatch):
     asyncio.get_event_loop().run_until_complete(init_db())
 
 
-# ---------------------------------------------------------------------------
-# Helpers shared across test classes
-# ---------------------------------------------------------------------------
-
-def _create_team(client: TestClient, name: str = "My Team") -> dict:
+def _create_team(client: TestClient, name: str = "My Team") -> dict[str, Any]:
     resp = client.post("/api/teams", json={"name": name})
     assert resp.status_code == 201
     return resp.json()
 
-
-# ---------------------------------------------------------------------------
-# TestListTeams
-# ---------------------------------------------------------------------------
 
 class TestListTeams:
     def test_list_empty_returns_empty_list(self):
@@ -123,10 +112,6 @@ class TestListTeams:
             assert team["member_count"] == 0
 
 
-# ---------------------------------------------------------------------------
-# TestCreateTeam
-# ---------------------------------------------------------------------------
-
 class TestCreateTeam:
     def test_create_team_returns_201_with_data(self):
         client = TestClient(app, raise_server_exceptions=False)
@@ -149,10 +134,6 @@ class TestCreateTeam:
         resp = client.post("/api/teams", json={"name": "Sixth Team"})
         assert resp.status_code == 409
 
-
-# ---------------------------------------------------------------------------
-# TestGetTeam
-# ---------------------------------------------------------------------------
 
 class TestGetTeam:
     @patch("backend.routes.teams.pokeapi_get")
@@ -181,10 +162,6 @@ class TestGetTeam:
         assert resp.status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# TestRenameTeam
-# ---------------------------------------------------------------------------
-
 class TestRenameTeam:
     def test_rename_returns_200_with_updated_name(self):
         client = TestClient(app, raise_server_exceptions=False)
@@ -204,10 +181,6 @@ class TestRenameTeam:
         assert resp.status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# TestDeleteTeam
-# ---------------------------------------------------------------------------
-
 class TestDeleteTeam:
     def test_delete_returns_ok(self):
         client = TestClient(app, raise_server_exceptions=False)
@@ -218,7 +191,6 @@ class TestDeleteTeam:
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
 
-        # Confirm it's gone
         get_resp = client.get(f"/api/teams/{team_id}")
         assert get_resp.status_code == 404
 
@@ -234,29 +206,22 @@ class TestDeleteTeam:
         team = _create_team(client, "Cascade Team")
         team_id = team["id"]
 
-        # Add a member
         add_resp = client.post(f"/api/teams/{team_id}/members/1")
         assert add_resp.status_code == 201
 
-        # Delete the team
         del_resp = client.delete(f"/api/teams/{team_id}")
         assert del_resp.status_code == 200
         assert del_resp.json()["ok"] is True
 
-        # Team should be gone
         assert client.get(f"/api/teams/{team_id}").status_code == 404
 
-        # If we create a new team we can add the same pokemon — the old member
-        # row was cascade-deleted, so no duplicate constraint fires.
+        # Re-adding the same pokemon on a new team must succeed: the old
+        # team_members row was cascade-deleted so the UNIQUE constraint is free.
         new_team = _create_team(client, "New Team")
         new_id = new_team["id"]
         add_again = client.post(f"/api/teams/{new_id}/members/1")
         assert add_again.status_code == 201
 
-
-# ---------------------------------------------------------------------------
-# TestTeamMembers
-# ---------------------------------------------------------------------------
 
 class TestTeamMembers:
     @patch("backend.routes.teams.pokeapi_get")
@@ -292,11 +257,10 @@ class TestTeamMembers:
         team = _create_team(client)
         tid = team["id"]
 
-        for pokemon_id in range(1, 7):  # add 6 members (pokemon ids 1-6)
+        for pokemon_id in range(1, 7):
             resp = client.post(f"/api/teams/{tid}/members/{pokemon_id}")
             assert resp.status_code == 201, f"Expected 201 adding pokemon {pokemon_id}, got {resp.status_code}"
 
-        # 7th member should be rejected
         resp = client.post(f"/api/teams/{tid}/members/7")
         assert resp.status_code == 409
 
@@ -312,7 +276,6 @@ class TestTeamMembers:
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
 
-        # Confirm the member is gone
         detail = client.get(f"/api/teams/{tid}").json()
         assert detail["members"] == []
 
@@ -325,10 +288,6 @@ class TestTeamMembers:
         assert resp.status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# TestCoverage
-# ---------------------------------------------------------------------------
-
 class TestCoverage:
     def test_coverage_empty_team_returns_all_no_coverage(self):
         client = TestClient(app, raise_server_exceptions=False)
@@ -338,7 +297,6 @@ class TestCoverage:
         data = resp.json()
         assert data["strong"] == []
         assert data["weak"] == []
-        # All 18 types should appear in no_coverage
         assert len(data["no_coverage"]) == 18
 
     @patch("backend.routes.teams.pokeapi_get")

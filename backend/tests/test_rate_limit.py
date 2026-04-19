@@ -23,10 +23,6 @@ from fastapi.testclient import TestClient
 
 from backend.middleware.rate_limit import RateLimitMiddleware
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 SMALL_LIMIT = 5        # requests allowed per window
 SMALL_WINDOW = 1       # window size in seconds (kept tiny for reset tests)
 
@@ -47,19 +43,11 @@ def build_app(requests_per_window: int = SMALL_LIMIT, window_seconds: int = SMAL
     return app
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture()
 def client() -> TestClient:
     """TestClient backed by a fresh app instance for each test."""
     return TestClient(build_app(), raise_server_exceptions=True)
 
-
-# ---------------------------------------------------------------------------
-# Test: requests under the limit succeed
-# ---------------------------------------------------------------------------
 
 class TestRequestsUnderLimit:
     def test_all_requests_within_limit_return_200(self, client: TestClient):
@@ -76,10 +64,6 @@ class TestRequestsUnderLimit:
         assert response.status_code == 200
         assert response.json() == {"message": "pong"}
 
-
-# ---------------------------------------------------------------------------
-# Test: requests over the limit are rejected with 429
-# ---------------------------------------------------------------------------
 
 class TestRequestsOverLimit:
     def test_request_exceeding_limit_returns_429(self, client: TestClient):
@@ -99,16 +83,11 @@ class TestRequestsOverLimit:
         assert response.status_code == 429
         body = response.json()
         assert isinstance(body, dict), "429 body should be a JSON object"
-        # The body should communicate that the rate limit was exceeded.
         body_text = str(body).lower()
         assert any(
             keyword in body_text for keyword in ("rate", "limit", "too many")
         ), f"429 body does not describe a rate limit error: {body}"
 
-
-# ---------------------------------------------------------------------------
-# Test: rate limit headers are present
-# ---------------------------------------------------------------------------
 
 class TestRateLimitHeaders:
     REQUIRED_HEADERS = [
@@ -168,10 +147,6 @@ class TestRateLimitHeaders:
         )
 
 
-# ---------------------------------------------------------------------------
-# Test: different IPs have separate rate limit buckets
-# ---------------------------------------------------------------------------
-
 class TestPerIpIsolation:
     def test_different_ips_do_not_share_quota(self):
         """Exhausting the limit for one IP must not affect a different IP."""
@@ -179,7 +154,6 @@ class TestPerIpIsolation:
         client_a = TestClient(app, headers={"X-Forwarded-For": "10.0.0.1"})
         client_b = TestClient(app, headers={"X-Forwarded-For": "10.0.0.2"})
 
-        # Exhaust the quota for IP A.
         for _ in range(SMALL_LIMIT):
             client_a.get("/ping")
         over_limit_response = client_a.get("/ping")
@@ -187,7 +161,6 @@ class TestPerIpIsolation:
             "IP A should be rate limited after exhausting its quota"
         )
 
-        # IP B should still have its own fresh quota.
         response_b = client_b.get("/ping")
         assert response_b.status_code == 200, (
             "IP B should not be rate limited by IP A's quota consumption"
@@ -208,10 +181,6 @@ class TestPerIpIsolation:
                 )
 
 
-# ---------------------------------------------------------------------------
-# Test: window resets after the time period elapses
-# ---------------------------------------------------------------------------
-
 class TestWindowReset:
     def test_quota_is_restored_after_window_expires(self):
         """
@@ -223,17 +192,15 @@ class TestWindowReset:
         app = build_app(requests_per_window=SMALL_LIMIT, window_seconds=1)
         client = TestClient(app, raise_server_exceptions=True)
 
-        # Exhaust the quota.
         for _ in range(SMALL_LIMIT):
             client.get("/ping")
         assert client.get("/ping").status_code == 429, (
             "Should be rate limited before window reset"
         )
 
-        # Wait for the window to roll over (add a small buffer for timing jitter).
+        # Small buffer for timing jitter beyond the 1s window.
         time.sleep(1.1)
 
-        # Quota should be fully restored.
         response = client.get("/ping")
         assert response.status_code == 200, (
             "Request should succeed after the rate limit window has expired"
@@ -244,7 +211,6 @@ class TestWindowReset:
         app = build_app(requests_per_window=SMALL_LIMIT, window_seconds=1)
         client = TestClient(app, raise_server_exceptions=True)
 
-        # Consume some quota.
         for _ in range(SMALL_LIMIT):
             client.get("/ping")
 
@@ -253,7 +219,6 @@ class TestWindowReset:
         response = client.get("/ping")
         assert response.status_code == 200
         remaining = int(response.headers["X-RateLimit-Remaining"])
-        # After reset the first new request should have consumed exactly 1 slot.
         assert remaining == SMALL_LIMIT - 1, (
             f"Expected remaining={SMALL_LIMIT - 1} after window reset, got {remaining}"
         )
