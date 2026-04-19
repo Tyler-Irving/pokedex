@@ -5,9 +5,8 @@ All external HTTP calls are mocked via monkeypatch on pokeapi_get so
 these tests are fully offline and self-contained.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
-import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 

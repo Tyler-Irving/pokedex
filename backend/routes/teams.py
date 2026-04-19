@@ -10,7 +10,6 @@ from ..schemas import (
     OkResponse,
     TeamCreateRequest,
     TeamDetail,
-    TeamMemberItem,
     TeamRenameRequest,
     TeamSummary,
     TeamsListResponse,

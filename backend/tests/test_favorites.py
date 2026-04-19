@@ -5,7 +5,6 @@ Uses a temporary aiosqlite database and mocks pokeapi_get so no real
 HTTP calls or persistent DB writes occur.
 """
 
-import os
 from unittest.mock import patch
 
 import pytest
