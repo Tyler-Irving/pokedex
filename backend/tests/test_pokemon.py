@@ -5,6 +5,7 @@ All external HTTP calls are mocked via monkeypatch on pokeapi_get so
 these tests are fully offline and self-contained.
 """
 
+from typing import Any
 from unittest.mock import patch
 
 from fastapi import HTTPException
@@ -59,7 +60,7 @@ FAKE_SPECIES = {
 }
 
 
-def _mock_pokeapi_get(responses: dict | None = None):
+def _mock_pokeapi_get(responses: dict[str, Any] | None = None):
     """Return an AsyncMock that resolves the given path→response mapping."""
     default_responses = {
         "pokemon?limit=1302&offset=0": FAKE_LIST,
@@ -269,7 +270,7 @@ class TestListTypes:
 # Tests: GET /api/compare
 # ---------------------------------------------------------------------------
 
-def _make_pokemon_data(pokemon_id: int, name: str, hp: int, attack: int) -> dict:
+def _make_pokemon_data(pokemon_id: int, name: str, hp: int, attack: int) -> dict[str, Any]:
     return {
         "id": pokemon_id,
         "name": name,

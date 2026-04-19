@@ -19,6 +19,7 @@ import logging
 import time
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -35,7 +36,7 @@ class _JsonFormatter(logging.Formatter):
     """Render each LogRecord as a single-line JSON object."""
 
     def format(self, record: logging.LogRecord) -> str:
-        payload: dict = {
+        payload: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,

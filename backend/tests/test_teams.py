@@ -6,6 +6,7 @@ real HTTP calls or persistent DB writes occur.
 """
 
 import asyncio
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -88,7 +89,7 @@ def _use_tmp_db(tmp_path, monkeypatch):
 # Helpers shared across test classes
 # ---------------------------------------------------------------------------
 
-def _create_team(client: TestClient, name: str = "My Team") -> dict:
+def _create_team(client: TestClient, name: str = "My Team") -> dict[str, Any]:
     resp = client.post("/api/teams", json={"name": name})
     assert resp.status_code == 201
     return resp.json()
