@@ -3,7 +3,7 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -40,11 +40,11 @@ async def lifespan(app: FastAPI):
     await init_db()
     try:
         await build_type_index()
-    except Exception:
+    except HTTPException:
         _logger.warning("build_type_index() failed at startup; type filtering will be unavailable", exc_info=True)
     try:
         await build_type_chart()
-    except Exception:
+    except HTTPException:
         _logger.warning("build_type_chart() failed at startup; coverage calculations will be unavailable", exc_info=True)
     yield
 
