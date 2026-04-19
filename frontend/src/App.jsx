@@ -29,7 +29,6 @@ export default function App() {
   const [coverage, setCoverage] = useState(null);
   const pendingFavs = useRef(new Set());
 
-  // Fetch types on mount
   useEffect(() => {
     fetch("/api/types", { headers: { "X-API-Key": API_KEY } })
       .then((response) => {
@@ -40,7 +39,6 @@ export default function App() {
       .catch((err) => console.error(err));
   }, []);
 
-  // Fetch favorites set
   const loadFavorites = useCallback(() => {
     fetch("/api/favorites", { headers: { "X-API-Key": API_KEY } })
       .then((response) => {
@@ -84,7 +82,6 @@ export default function App() {
 
   useEffect(() => { loadActiveTeam(activeTeamId); }, [activeTeamId, loadActiveTeam]);
 
-  // Fetch pokemon list
   useEffect(() => {
     if (view !== "list") return;
     setLoading(true);
@@ -115,12 +112,10 @@ export default function App() {
     return () => controller.abort();
   }, [offset, search, typeFilter, view]);
 
-  // Reset offset when filters change
   useEffect(() => {
     setOffset(0);
   }, [search, typeFilter]);
 
-  // Fetch detail + encounters
   useEffect(() => {
     if (selected == null) {
       setDetail(null);
@@ -163,7 +158,7 @@ export default function App() {
 
     const wasFav = favorites.has(id);
 
-    // Optimistic update
+    // Optimistic update; reverted in the catch block below on failure.
     setFavorites((prev) => {
       const next = new Set(prev);
       if (wasFav) next.delete(id);
@@ -187,7 +182,6 @@ export default function App() {
       });
       if (!response.ok) throw new Error(`Failed to update favorite: ${response.status}`);
     } catch (err) {
-      // Revert optimistic update
       loadFavorites();
       console.error(err);
       setError(err.message);

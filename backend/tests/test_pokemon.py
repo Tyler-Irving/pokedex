@@ -14,10 +14,6 @@ from fastapi.testclient import TestClient
 from backend.main import app
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 FAKE_LIST = {
     "results": [
         {"name": "bulbasaur", "url": "https://pokeapi.co/api/v2/pokemon/1/"},
@@ -79,10 +75,6 @@ def _mock_pokeapi_get(responses: dict[str, Any] | None = None):
     return side_effect
 
 
-# ---------------------------------------------------------------------------
-# Tests: GET /api/pokemon (list)
-# ---------------------------------------------------------------------------
-
 class TestListPokemon:
     @patch("backend.routes.pokemon.pokeapi_get")
     def test_list_returns_200_with_total_and_results(self, mock_get):
@@ -117,10 +109,6 @@ class TestListPokemon:
         assert body["results"] == []
 
 
-# ---------------------------------------------------------------------------
-# Tests: GET /api/pokemon/{id} (detail)
-# ---------------------------------------------------------------------------
-
 class TestGetPokemon:
     @patch("backend.routes.pokemon.pokeapi_get")
     def test_get_pokemon_returns_expected_shape(self, mock_get):
@@ -146,10 +134,6 @@ class TestGetPokemon:
         assert response.status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# Tests: GET /api/pokemon?type=<type> (type filter)
-# ---------------------------------------------------------------------------
-
 class TestListPokemonTypeFilter:
     @patch("backend.routes.pokemon._type_index", {"grass": ["bulbasaur"], "fire": ["charmander"]})
     @patch("backend.routes.pokemon.pokeapi_get")
@@ -172,7 +156,7 @@ class TestListPokemonTypeFilter:
         response = client.get("/api/pokemon?type=dragon")
         assert response.status_code == 200
         body = response.json()
-        assert body["total"] == 3  # all three FAKE_LIST entries returned
+        assert body["total"] == 3
 
     @patch("backend.routes.pokemon._type_index", {"grass": ["bulbasaur", "squirtle"], "fire": ["charmander"]})
     @patch("backend.routes.pokemon.pokeapi_get")
@@ -187,10 +171,6 @@ class TestListPokemonTypeFilter:
         assert body["total"] == 1
         assert body["results"][0]["name"] == "squirtle"
 
-
-# ---------------------------------------------------------------------------
-# Tests: GET /api/pokemon/{id_or_name}/encounters
-# ---------------------------------------------------------------------------
 
 FAKE_ENCOUNTERS = [
     {
@@ -224,7 +204,6 @@ class TestGetPokemonEncounters:
     def test_encounters_invalid_id_returns_400(self, mock_get):
         mock_get.side_effect = _mock_pokeapi_get()
         client = TestClient(app, raise_server_exceptions=False)
-        # Special characters are not valid
         response = client.get("/api/pokemon/!!invalid!!/encounters")
         assert response.status_code in (400, 422)
 
@@ -235,10 +214,6 @@ class TestGetPokemonEncounters:
         response = client.get("/api/pokemon/99999/encounters")
         assert response.status_code == 404
 
-
-# ---------------------------------------------------------------------------
-# Tests: GET /api/types
-# ---------------------------------------------------------------------------
 
 class TestListTypes:
     @patch("backend.routes.pokemon._type_index", {"fire": [], "grass": [], "water": []})
@@ -265,10 +240,6 @@ class TestListTypes:
         assert response.status_code == 200
         assert response.json() == {"types": []}
 
-
-# ---------------------------------------------------------------------------
-# Tests: GET /api/compare
-# ---------------------------------------------------------------------------
 
 def _make_pokemon_data(pokemon_id: int, name: str, hp: int, attack: int) -> dict[str, Any]:
     return {
@@ -310,9 +281,7 @@ class TestComparePokemon:
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/api/compare?ids=1,4")
         body = response.json()
-        # bulbasaur hp=45 > charmander hp=39
         assert body["best_in_stat"]["hp"] == "bulbasaur"
-        # charmander attack=52 > bulbasaur attack=49
         assert body["best_in_stat"]["attack"] == "charmander"
 
     @patch("backend.routes.pokemon.pokeapi_get")

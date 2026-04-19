@@ -8,12 +8,9 @@ from starlette.requests import Request
 
 
 def get_client_ip(request: Request) -> str:
-    """Resolve the real client IP, honouring common reverse-proxy headers.
+    """Resolve the real client IP.
 
-    Priority order:
-    1. X-Forwarded-For (first address in the list)
-    2. X-Real-IP
-    3. Direct connection IP from the ASGI scope
+    Priority: X-Forwarded-For (first entry) > X-Real-IP > direct ASGI client.
     """
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:

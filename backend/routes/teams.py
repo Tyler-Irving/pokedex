@@ -190,14 +190,12 @@ async def get_coverage(team_id: int, _: None = Depends(require_api_key)):
     if not _type_chart:
         raise HTTPException(status_code=503, detail="Type chart not yet loaded; try again shortly")
 
-    # Fetch types for each member from PokeAPI
     member_types: list[list[str]] = []
     for row in member_rows:
         data = await pokeapi_get(f"pokemon/{row['pokemon_id']}")
         types = [t["type"]["name"] for t in data["types"]]
         member_types.append(types)
 
-    # All unique attack types the team has
     all_team_types: set[str] = {t for types in member_types for t in types}
 
     def type_names(relations_key: str, type_name: str) -> set[str]:
@@ -220,14 +218,12 @@ async def get_coverage(team_id: int, _: None = Depends(require_api_key)):
     no_coverage = []
 
     for def_type in ALL_TYPES:
-        # can_hit: any team attack type deals super-effective damage to def_type
         can_hit = any(def_type in type_names("double_damage_to", atk) for atk in all_team_types)
 
         if can_hit:
             strong.append(def_type)
             continue
 
-        # all_members_vulnerable: every pokemon on the team is weak to def_type
         all_members_vulnerable = all(
             is_pokemon_weak_to(def_type, poke_types)
             for poke_types in member_types

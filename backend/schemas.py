@@ -3,8 +3,6 @@
 from pydantic import BaseModel, Field
 
 
-# --- PokeAPI common patterns ---
-
 class NamedAPIResource(BaseModel):
     name: str
     url: str
@@ -16,8 +14,6 @@ class NamedAPIResourceList(BaseModel):
     previous: str | None = None
     results: list[NamedAPIResource]
 
-
-# --- Pokemon ---
 
 class PokemonSummary(BaseModel):
     id: int
@@ -43,13 +39,9 @@ class PokemonDetail(BaseModel):
     flavor_text: str
 
 
-# --- Types ---
-
 class TypesListResponse(BaseModel):
     types: list[str]
 
-
-# --- Compare ---
 
 class PokemonCompareItem(BaseModel):
     id: int
@@ -64,8 +56,6 @@ class CompareResponse(BaseModel):
     best_in_stat: dict[str, str]
 
 
-# --- Favorites ---
-
 class FavoriteItem(BaseModel):
     pokemon_id: int
     name: str
@@ -79,8 +69,6 @@ class FavoritesListResponse(BaseModel):
 class OkResponse(BaseModel):
     ok: bool
 
-
-# --- Teams ---
 
 class TeamMemberItem(BaseModel):
     pokemon_id: int

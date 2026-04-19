@@ -51,14 +51,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Pokédex", lifespan=lifespan)
 
-# Middleware is applied in reverse registration order (last registered = outermost).
-# Logging is outermost so it records every request including 429s from rate limiting.
-# Rate limiting short-circuits before cache headers run on the inner response.
+# Middleware runs in reverse registration order; logging must be outermost so it
+# sees 429s from rate limiting, and cache headers must be innermost.
 app.add_middleware(CacheHeaderMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_window=100, window_seconds=60)
 app.add_middleware(LoggingMiddleware)
 
-# Mount all routers
 for module in [
     berries,
     contests,
@@ -77,11 +75,8 @@ for module in [
     app.include_router(module.router)
 
 
-# --------------- API index ---------------
-
 @app.get("/api")
 async def api_index():
-    """List all available resource endpoints."""
     return {
         "berries": {
             "berry": "/api/berry",
@@ -160,8 +155,6 @@ async def api_index():
     }
 
 
-# --------------- Health check ---------------
-
 @app.get("/api/health")
 async def health():
     db_status = "ok"
@@ -181,8 +174,6 @@ async def health():
         "db": db_status,
     }
 
-
-# --------------- Serve frontend ---------------
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 

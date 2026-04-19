@@ -70,7 +70,6 @@ async def pokeapi_get(path: str) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=f"PokeAPI unreachable: {exc}")
 
 
-# Pre-fetch type index for filtering
 _type_index: dict[str, list[str]] = {}  # type_name -> [pokemon_name, ...]
 
 

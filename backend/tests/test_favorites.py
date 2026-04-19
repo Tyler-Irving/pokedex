@@ -14,10 +14,6 @@ from backend.database import init_db
 from backend.main import app
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 FAKE_POKEMON = {
     "name": "bulbasaur",
     "sprites": {"front_default": "https://sprites/1.png"},
@@ -42,10 +38,6 @@ def _use_tmp_db(tmp_path, monkeypatch):
     monkeypatch.setattr("backend.database.DB_PATH", db_path)
     asyncio.get_event_loop().run_until_complete(init_db())
 
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 class TestListFavorites:
     @patch("backend.routes.favorites.pokeapi_get")
@@ -100,10 +92,6 @@ class TestRemoveFavorite:
         resp = client.delete("/api/favorites/99999")
         assert resp.status_code == 404
 
-
-# ---------------------------------------------------------------------------
-# Auth enforcement tests
-# ---------------------------------------------------------------------------
 
 class TestAuthEnforcement:
     """Verify that when POKEDEX_API_KEY is set the key header is enforced."""

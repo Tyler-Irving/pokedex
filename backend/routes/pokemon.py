@@ -16,8 +16,6 @@ _POKEMON_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$|^\d+$")
 router = APIRouter(prefix="/api", tags=["Pokemon"])
 
 
-# --- Pokemon (enhanced with search/filter) ---
-
 @router.get("/pokemon", response_model=PokemonListResponse)
 async def list_pokemon(
     offset: int = Query(0, ge=0),
@@ -134,15 +132,11 @@ async def compare_pokemon(ids: str = Query(..., description="Comma-separated lis
     return {"pokemon": pokemon, "best_in_stat": best_in_stat}
 
 
-# --- Types (enhanced with pre-built index) ---
-
 @router.get("/types", response_model=TypesListResponse)
 async def list_types():
     """List all pokemon types."""
     return {"types": sorted(_type_index.keys())}
 
-
-# --- Standard PokeAPI proxy routes ---
 
 for _resource in (
     "type",
